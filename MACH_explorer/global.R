@@ -29,46 +29,36 @@ library(here)
 ### DATA ###
 ################################################
 # site attribute file with name, HUC, coordinates, area
-site_attributes = read_csv(here("/MACH_explorer/data/site_info.csv")
-discharge_count = read_csv("F:/MACH/data/discharge_count.csv")
+site_attributes = read_csv(here("MACH_explorer", "data", "attributes", "site_info.csv"))
+discharge_count = read_csv(here("MACH_explorer", "data", "attributes", "discharge_mach.csv"))
 
 # shapefiles
-#shapefile_dir = here("data", "shapefiles")
+shapefile_dir = here("MACH_explorer", "data", "shapefile", "MACH_basins.shp")
+basins_shp = st_read(shapefile_dir) %>% st_transform(4326) # convert to lat/lon
 
 # climate variables (organized by folder with individual csv file per site no)
 # format is "basin_00000000_XXXX.csv" where 0 is 8 digit site no and XXXX is variable abbreviation
 # files have first column as "SITENO", second "DATE"
 
-prcp_filepath = "F:/MACH/data/PRCP"
-prcp_files = list.files(path = prcp_filepath, pattern = "basin_\\d{8}_prcp.csv", full.names = TRUE)
+mach_dir = here("MACH_explorer", "data", "timeseries", "MACH")
+# list all files 
+mach_files = list.files(mach_dir, pattern = "basin_\\d{8}_MACH.csv", full.names = TRUE)                     
+# 8 digit site number from filename
+mach_ids = mach_files %>% basename() %>% str_extract("(?<=basin_)\\d{8}(?=_MACH.csv)")                     
 
-#tair_filepath = "F:/MACH/data/TAIR"
-tair_filepath = "F:/MACH/data/TAIR_MEAN"
-tair_files = list.files(path = tair_filepath, pattern = "basin_\\d{8}_tair.csv", full.names = TRUE)
 
-pet_filepath = "F:/MACH/data/PET"
-pet_files = list.files(path = pet_filepath, pattern = "basin_\\d{8}_pet.csv", full.names = TRUE)
-
-aet_filepath = "F:/MACH/data/AET"
-aet_files = list.files(path = aet_filepath, pattern = "basin_\\d{8}_aet.csv", full.names = TRUE)
-
-disch_filepath = "F:/MACH/data/OBSQ"
-disch_files = list.files(path = disch_filepath, pattern = "basin_\\d{8}_obsq.csv", full.names = TRUE)
-
-swe_filepath = "F:/MACH/data/SWE"
-swe_files = list.files(path = swe_filepath, pattern = "basin_\\d{8}_swe.csv", full.names = TRUE)
 
 # site attributes
 site = site_attributes  
 site_names = colnames(site)[-(1:2)]  
 # climate attributes
-climate = read_csv("F:/MACH/data/climate.csv")
+climate = read_csv(here("MACH_explorer", "data", "attributes", "overall_climate.csv"))
 # removes columns that are completely filled with NA or blank
 climate = climate[,colSums(is.na(climate)|climate == "") !=nrow(climate)]
 clim_names = colnames(climate)[-(1:2)]
 
 # hydrology attributes
-hydrology = read_csv("F:/MACH/data/hydrology.csv")
+hydrology = read_csv(here("MACH_explorer", "data", "attributes", "hydrology.csv"))
 hydrology = hydrology[,colSums(is.na(hydrology)|hydrology == "") !=nrow(hydrology)]
 hydro_names = colnames(hydrology)[-(1:2)]
 
@@ -85,8 +75,9 @@ months = c("JAN"= 1, "FEB"= 2, "MAR"= 3, "APR"= 4, "MAY"= 5, "JUN"= 6,
 ################################################
 ### FUNCTIONS ###
 ################################################
-# convert dates to water year or calendar year
-wYear = function(date) ifelse(month(date) < 10, year(date), year(date) + 1)
+# convert dates to water year 
+  wYear = function(date) {
+    ifelse(month(date) < 10, year(date), year(date)+1)}
 
   # function to create a complete date sequence   
   create_complete_dates = function(gauge_id, frequency = "day") {

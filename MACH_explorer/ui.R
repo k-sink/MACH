@@ -4,8 +4,30 @@
 # user interface
 ui = fluidPage(
   
+    # Add custom CSS for resizing
+  tags$head(tags$style(HTML("
+    .well { 
+      min-height: 100px; 
+      height: auto !important; 
+      overflow: hidden; 
+    }
+    .dataTables_wrapper { 
+      width: 100% !important; 
+    }
+    .dataTables_scroll {
+     max-height: 70vh !important;
+     overflow-y: auto !important;
+    }
+    .dataTables_paginate { 
+      margin-top: 10px !important; 
+    }
+    .dataTables_info { 
+      margin-top: 10px !important; 
+    }
+  "))),
+  
   # bootstrap CSS frameworks 
-  theme = bslib::bs_theme(bootswatch = "cosmo"), 
+  theme = bslib::bs_theme(bootswatch = "lumen"), 
   
   # implement shiny js features
   useShinyjs(), 
@@ -14,91 +36,7 @@ ui = fluidPage(
   
   # create tabs   
   tabsetPanel(
-    
-    
-##############################
-#### HOME TAB  ####
-##############################  
-# user information 
 
-    tabPanel(title = "Home", 
-       h5(strong("Welcome to the MACH Explorer")), 
-        br(),
-       
-         fluidRow(
-          column(width = 12, 
-                 wellPanel(
-                   h6(strong("SITE SELECTION")),
-                   br(),
-                   p(strong("USGS Stream Gauging Site Locations")), 
-                   tags$ul(
-                     tags$li("The map displays the sites listed in the Selected Stream Gauging Sites table. 
-                       Basemap options include the OpenStreetMap and EsriTopo.")), 
-                   
-                   p(strong("Filter Sites")), 
-                   tags$ul( 
-                    tags$li("Regional HUC: Select site by regional hydrologic unit code (huc). Allows for multiple selections. 
-                       Use backspace to remove a selection."), 
-                    tags$li("State: Select site by state. Allows for multiple selections. Use backspace to remove a selection."),
-                    tags$li("Latitude (N): Select site by latitude range in decimal degrees."), 
-                    tags$li("Longitude (W): Select site by longitude range in decimal degrees."), 
-                    tags$li("Mean Elevation: Select site by mean elevation in meters above sea level."),
-                    tags$li("Drainage area: Select site by drainage area in square kilometers."),
-                    tags$li("Mean Slope: Select site by mean slope in percent."),
-                    tags$li("Reset Filters button will clear all selected filters.")),
-                   
-                   p(strong("Edit Site Selections")), 
-                   tags$ul(
-                     tags$li("Enter 8-digit Site No: Manually add or remove a site by entering the 8-digit site number including leading zeroes."), 
-                     tags$li("Remove all Sites button will clear all sites, resulting in a blank Site Locations Map and Selected Stream Gauging Sites table."), 
-                     tags$li("The Reset Filters button can be pressed at any time to display all 1,014 sites.")),
-                   
-                   p(strong("Stream Discharge Record")),
-                   tags$ul(
-                     tags$li("Table displays selected sites and the streamflow record information, which includes
-                             the number of records (count), the first and last available dates, and the number of 
-                             records for each calendar year.")), 
-                   
-                   p(strong("Selected Stream Gauging Sites")), 
-                   tags$ul(
-                     tags$li("Table displays sites based on Filter Sites and Edit Site Selections information."),
-                     tags$li("Table includes the USGS site number, HUC, State, Latitude, Longitude, Elevation, Area, and Slope.")),
-                   ) # wellPanel close
-                ) #column close
-                 ), #fluidRow close
-      br(), 
-      fluidRow(
-        column(width = 12, 
-               wellPanel(
-                 h6(strong("DAILY DATA")), 
-                 br(), 
-                 p(strong("Select Variable(s)")), 
-                 tags$ul(
-                   tags$li("Select one or more variables for the filtered sites chosen in the Site Selection tab."), 
-                   tags$li("Variables can be filtered by a range of values using the slider bars. Defaults to all available data for selected variable."), 
-                   tags$li("Variables can be filtered by date, calendar year, and/or by month."), 
-                   tags$li("The Retrieve and View Data button must be pressed if selection criteria are modified.")),
-                 
-                 p(strong("Filtered Daily Data")), 
-                 tags$ul(
-                   tags$li("Table displays the site number, date, and selected variable(s)"), 
-                   tags$li("Variable abbreviations and units are: Precipitation (PRCP) mm/day, Mean (TAIR), minimum (TMIN), max (TMAX) air temperature degrees Celcius, 
-                           Potential Evapotranspiration (PET) mm/day, Actual Evapotranspiration (AET) mm/day, 
-                           Stream discharge (OBSQ) mm/day, Snow water equivalent (SWE) mm/day."),
-                   tags$li("If filtering criteria does not match any of the available
-                           data, the table will display that no data is available.")), 
-                 
-                 p(strong("Download Daily Data")), 
-                 tags$ul(
-                   tags$li("Export as csv button will download the data displayed in the Filtered Daily Data table as one csv file."), 
-                   tags$li("Export as separate csv files will download the data displayed in the Filtered Daily Data table as separate csv files
-                           for each site into a single zip file."))
-                
-                 )
-               )
-      ) #fluidRow close
-                 ), #tabPanel close
-    
 ##############################
 #### TAB 1 SITE SELECTION ####
 ##############################
@@ -118,8 +56,8 @@ ui = fluidPage(
             br(),
        
    # leaflet map output, gauges that have been filtered will be displayed, new column      
-          leafletOutput(outputId = "my_leaflet")
-            )), # wellPanel, column close 
+          leafletOutput(outputId = "my_leaflet"), 
+                  )), # wellPanel, column close 
                
        # column for filters 
          column(width = 3,
@@ -128,9 +66,9 @@ ui = fluidPage(
             br(), 
                     
    # filter by HUC (2 digit USGS), column huc_02
-        selectInput(inputId = "huc1", label = "Regional HUC", 
-                    choices = sort(unique(site_attributes$huc_02)),
-                    multiple = TRUE),
+      #  selectInput(inputId = "huc1", label = "Regional HUC", 
+           #         choices = sort(unique(site_attributes$huc_cd)),
+          #          multiple = TRUE),
                         
   # filter by state (contiguous only), column state
         selectInput(inputId = "state1", label = "State",
@@ -262,6 +200,20 @@ ui = fluidPage(
                    condition = "input.select_tair",
                    sliderInput(inputId = "tair1", label = NULL, 
                    min = -50, max = 50, value = c(-50,50), ticks = FALSE)),
+      
+         # minimum temperature
+         checkboxInput(inputId = "select_tmin", label = "Minimum Temperature (C)"), 
+                 conditionalPanel(
+                   condition = "input.select_tmin",
+                   sliderInput(inputId = "tmin1", label = NULL, 
+                   min = -50, max = 50, value = c(-50,50), ticks = FALSE)),
+      
+        # maximum temperature
+         checkboxInput(inputId = "select_tmax", label = "Maximum Temperature (C)"), 
+                 conditionalPanel(
+                   condition = "input.select_tmax",
+                   sliderInput(inputId = "tmax1", label = NULL, 
+                   min = -50, max = 50, value = c(-50,50), ticks = FALSE)),
           
         # potential evapotranspiration 
          checkboxInput(inputId = "select_pet", label = "Potential Evapotranspiration (mm)"), 
@@ -270,14 +222,14 @@ ui = fluidPage(
                    sliderInput(inputId = "pet1", label = NULL, 
                    min = -1, max = 40, value = c(-1,40), ticks = FALSE)),
       
-           # actual evapotranspiration
+        # actual evapotranspiration
          checkboxInput(inputId = "select_aet", label = "Actual Evapotranspiration (mm)"),
               conditionalPanel(
                    condition = "input.select_aet",
                    sliderInput(inputId = "aet1", label = NULL, 
                    min = -1, max = 40, value = c(-1,40), ticks = FALSE)),
       
-          # observed discharge      
+       # observed discharge      
          checkboxInput(inputId = "select_disch", label = "Stream Discharge (mm)"),
              conditionalPanel(
                    condition = "input.select_disch",
@@ -385,6 +337,12 @@ ui = fluidPage(
        
          # temperature
          checkboxInput(inputId = "select_tair_m", label = "Mean Temperature (C)"), 
+      
+         # minimum temperature
+         checkboxInput(inputId = "select_tmin_m", label = "Minimum Temperature (C)"), 
+      
+        # maximum temperature
+         checkboxInput(inputId = "select_tmax_m", label = "Maximum Temperature (C)"), 
             
         # potential evapotranspiration 
          checkboxInput(inputId = "select_pet_m", label = "Potential Evapotranspiration (mm)"), 
@@ -482,6 +440,12 @@ ui = fluidPage(
        
          # temperature
          checkboxInput(inputId = "select_tair_y", label = "Mean Temperature (C)"), 
+      
+        # minimum temperature
+         checkboxInput(inputId = "select_tmin_y", label = "Minimum Temperature (C)"), 
+       
+        # maximum temperature
+         checkboxInput(inputId = "select_tmax_y", label = "Maximum Temperature (C)"), 
             
         # potential evapotranspiration 
          checkboxInput(inputId = "select_pet_y", label = "Potential Evapotranspiration (mm)"), 
@@ -567,8 +531,13 @@ ui = fluidPage(
                         
       br(), 
       actionButton(inputId = "get_attributes", label = "Retrieve Attributes"),
-    br(), br(), 
-    downloadButton(outputId = "download_att", label = "Export attributes as csv" )
+   
+                ), # wellPanel close
+    br(), 
+    wellPanel(
+    h6(strong("Download Attributes")), 
+    br(), 
+    downloadButton(outputId = "download_att", label = "Export as csv file" )
                       )), # wellPanel, column close
                
 # new column to display data table for selected attributes
@@ -580,7 +549,96 @@ ui = fluidPage(
                       )) # wellPanel, column close
              ) # fluidRow close
              
-    ) # tab panel 3 attributes close
+    ), # tab panel 5 attributes close
+
+##############################
+#### HOME TAB  ####
+##############################  
+# user information 
+
+    tabPanel(title = "About", 
+               fluidRow(
+         column(width = 12, 
+                
+                p("This app allows users to navigate the MACH dataset, which contains daily data for 
+                  1,014 watersheds within the conterminous United States. Precipitation, temperature, 
+                  snow water equivalent data were derived from Daymet V4")
+                ),
+       ),
+       
+         fluidRow(
+          column(width = 12, 
+                 wellPanel(
+                   h6(strong("SITE SELECTION")),
+                   br(),
+                   p(strong("USGS Stream Gauging Site Locations")), 
+                   tags$ul(
+                     tags$li("The map displays the sites listed in the Selected Stream Gauging Sites table. 
+                       Basemap options include the OpenStreetMap and EsriTopo.")), 
+                   
+                   p(strong("Filter Sites")), 
+                   tags$ul( 
+                    tags$li("Regional HUC: Select site by regional hydrologic unit code (huc). Allows for multiple selections. 
+                       Use backspace to remove a selection."), 
+                    tags$li("State: Select site by state. Allows for multiple selections. Use backspace to remove a selection."),
+                    tags$li("Latitude (N): Select site by latitude range in decimal degrees."), 
+                    tags$li("Longitude (W): Select site by longitude range in decimal degrees."), 
+                    tags$li("Mean Elevation: Select site by mean elevation in meters above sea level."),
+                    tags$li("Drainage area: Select site by drainage area in square kilometers."),
+                    tags$li("Mean Slope: Select site by mean slope in percent."),
+                    tags$li("Reset Filters button will clear all selected filters.")),
+                   
+                   p(strong("Edit Site Selections")), 
+                   tags$ul(
+                     tags$li("Enter 8-digit Site No: Manually add or remove a site by entering the 8-digit site number including leading zeroes."), 
+                     tags$li("Remove all Sites button will clear all sites, resulting in a blank Site Locations Map and Selected Stream Gauging Sites table."), 
+                     tags$li("The Reset Filters button can be pressed at any time to display all 1,014 sites.")),
+                   
+                   p(strong("Stream Discharge Record")),
+                   tags$ul(
+                     tags$li("Table displays selected sites and the streamflow record information, which includes
+                             the number of records (count), the first and last available dates, and the number of 
+                             records for each calendar year.")), 
+                   
+                   p(strong("Selected Stream Gauging Sites")), 
+                   tags$ul(
+                     tags$li("Table displays sites based on Filter Sites and Edit Site Selections information."),
+                     tags$li("Table includes the USGS site number, HUC, State, Latitude, Longitude, Elevation, Area, and Slope.")),
+                   ) # wellPanel close
+                ) #column close
+                 ), #fluidRow close
+      br(), 
+      fluidRow(
+        column(width = 12, 
+               wellPanel(
+                 h6(strong("DAILY DATA")), 
+                 br(), 
+                 p(strong("Select Variable(s)")), 
+                 tags$ul(
+                   tags$li("Select one or more variables for the filtered sites chosen in the Site Selection tab."), 
+                   tags$li("Variables can be filtered by a range of values using the slider bars. Defaults to all available data for selected variable."), 
+                   tags$li("Variables can be filtered by date, calendar year, and/or by month."), 
+                   tags$li("The Retrieve and View Data button must be pressed if selection criteria are modified.")),
+                 
+                 p(strong("Filtered Daily Data")), 
+                 tags$ul(
+                   tags$li("Table displays the site number, date, and selected variable(s)"), 
+                   tags$li("Variable abbreviations and units are: Precipitation (PRCP) mm/day, Mean (TAIR), minimum (TMIN), max (TMAX) air temperature degrees Celcius, 
+                           Potential Evapotranspiration (PET) mm/day, Actual Evapotranspiration (AET) mm/day, 
+                           Stream discharge (OBSQ) mm/day, Snow water equivalent (SWE) mm/day."),
+                   tags$li("If filtering criteria does not match any of the available
+                           data, the table will display that no data is available.")), 
+                 
+                 p(strong("Download Daily Data")), 
+                 tags$ul(
+                   tags$li("Export as csv button will download the data displayed in the Filtered Daily Data table as one csv file."), 
+                   tags$li("Export as separate csv files will download the data displayed in the Filtered Daily Data table as separate csv files
+                           for each site into a single zip file."))
+                
+                 )
+               )
+      ) #fluidRow close
+                 ) #tabPanel close
     
   ) #tabsetPanel close (all tabs)
   

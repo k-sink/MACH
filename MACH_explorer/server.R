@@ -26,9 +26,9 @@ server = function(input, output, session) {
     # updates instantly if any filter is changed
     
     # apply HUC filter if input is not NULL and not empty
-    if (!is.null(input$huc1) && length(input$huc1) > 0) {
-      siteinfo = siteinfo %>% dplyr::filter(huc_02 %in% input$huc1)
-    }
+  #  if (!is.null(input$huc1) && length(input$huc1) > 0) {
+  #    siteinfo = siteinfo %>% dplyr::filter(huc_cd %in% input$huc1)
+  #  }
     
     # apply state filter if input is not NULL and not empty
     if (!is.null(input$state1) && length(input$state1) > 0) {
@@ -47,12 +47,12 @@ server = function(input, output, session) {
     
     # elevation filter - apply only if input is not NULL and has a length of 2
     if (!is.null(input$elevation1) && length(input$elevation1) == 2) {
-      siteinfo = siteinfo %>% dplyr::filter(elev_mean_m >= input$elevation1[1], elev_mean_m <= input$elevation1[2])
+      siteinfo = siteinfo %>% dplyr::filter(elev_mean >= input$elevation1[1], elev_mean <= input$elevation1[2])
     }
     
     # area filter - apply only if input is not NULL and has a length of 2
     if (!is.null(input$area1) && length(input$area1) == 2) {
-      siteinfo = siteinfo %>% dplyr::filter(drain_area_sqkm >= input$area1[1], drain_area_sqkm <= input$area1[2])
+      siteinfo = siteinfo %>% dplyr::filter(NHD_drain_area_sqkm >= input$area1[1], NHD_drain_area_sqkm <= input$area1[2])
     }
     
     # slope filter - apply only if input is not NULL and has a length of 2
@@ -64,13 +64,13 @@ server = function(input, output, session) {
     siteinfo %>% 
       dplyr::select(
         SITENO = SITENO, 
-        HUC = huc_02,
+      #  HUC = huc_cd,
         NAME = station_name, 
         STATE = state, 
-        LATITUDE = dec_lat_va, 
-        LONGITUDE = dec_long_va, 
-        ELEVATION = elev_mean_m, 
-        AREA = drain_area_sqkm, 
+        LAT = dec_lat_va, 
+        LONG = dec_long_va, 
+        ELEV = elev_mean, 
+        AREA = NHD_drain_area_sqkm, 
         SLOPE = basin_slope
       )
     
@@ -95,13 +95,13 @@ server = function(input, output, session) {
         new_site = new_site %>%
           dplyr::select(
             SITENO = SITENO, 
-            HUC = huc_02,
+           # HUC = huc_cd,
             NAME = station_name, 
             STATE = state, 
-            LATITUDE = dec_lat_va, 
-            LONGITUDE = dec_long_va, 
-            ELEVATION = elev_mean_m, 
-            AREA = drain_area_sqkm, 
+            LAT = dec_lat_va, 
+            LONG = dec_long_va, 
+            ELEV = elev_mean, 
+            AREA = NHD_drain_area_sqkm, 
             SLOPE = basin_slope
           )
         
@@ -140,7 +140,9 @@ server = function(input, output, session) {
   
   # render the data table
   output$gauges = renderDT({
-    DT::datatable(manual_edit(), options = list(pageLength = 20, scrollX = '400px'))
+    DT::datatable(manual_edit(), options = list(
+      pageLength = 10, scrollX = TRUE, #autoWidth = TRUE, 
+      lengthMenu = c(5, 10, 20, 50), dom = "Blfrtip", paging = TRUE), class = "display responsive nowrap")
   })
   
   # discharge table to show the number of days on record per year for filtered gauges
@@ -151,17 +153,18 @@ server = function(input, output, session) {
   
   # render discharge days table
   output$discharge_days = renderDT({
-    DT::datatable(discharge_filt(), options = list(pageLength = 20, scrollX = '400px'))
+    DT::datatable(discharge_filt(), options = list(pageLength = 10, scrollX = TRUE, #autoWidth = TRUE, 
+      lengthMenu = c(5, 10, 20, 50), dom = "Blfrtip", paging = TRUE), class = "display responsive nowrap")
   })
   
   # observe the reset button click and reset all inputs
   observeEvent(input$reset, {
-    updateSelectInput(session, "huc1", selected = "")
+   # updateSelectInput(session, "huc1", selected = "")
     updateSelectInput(session, "state1", selected = "")
     updateSliderInput(session, "latitude1", value = c(-90, 90))
     updateSliderInput(session, "longitude1", value = c(-180, 180))
-    updateSliderInput(session, "elevation1", value = c(min(site_attributes$elev_mean_m), max(site_attributes$elev_mean_m)))
-    updateSliderInput(session, "area1", value = c(min(site_attributes$drain_area_sqkm), max(site_attributes$drain_area_sqkm)))
+    updateSliderInput(session, "elevation1", value = c(min(site_attributes$elev_mean), max(site_attributes$elev_mean)))
+    updateSliderInput(session, "area1", value = c(min(site_attributes$NHD_drain_area_sqkm), max(site_attributes$NHD_drain_area_sqkm)))
     updateSliderInput(session, "slope1", value = c(min(site_attributes$basin_slope), max(site_attributes$basin_slope)))
   })
   
@@ -172,21 +175,31 @@ server = function(input, output, session) {
     # display gauge locations based on filtered datatable sitefilt
     # options for different basemaps and overlays (from shapefiles)    
     leaflet() %>% 
-      setView(lng = -99, lat = 40, zoom = 3) %>% 
+      setView(lng = -99, lat = 40, zoom = 4) %>% 
       addTiles(group = "OpenStreetMap") %>% 
       addProviderTiles(providers$Esri.WorldTopoMap, group = "EsriTopo") %>% 
       addCircleMarkers(data = manual_edit(),
-                       lng = ~LONGITUDE, lat = ~LATITUDE, 
-                       radius = 3, 
-                       popup = paste0("Gauge ID: ", manual_edit()$SITENO, "<br>", # names correspond to edited above
-                                      "Gauge Name: ", manual_edit()$NAME, "<br>",
-                                      "Latitude: ",  manual_edit()$LATITUDE, "<br>",
-                                      "Longitude: ", manual_edit()$LONGITUDE))  %>% 
+                       lng = ~LONG, lat = ~LAT, 
+                       radius = 2, color = "blue", 
+                      popup = paste0("Gauge ID: ", manual_edit()$SITENO, "<br>", # names correspond to edited above
+                            "Gauge Name: ", manual_edit()$NAME, "<br>",
+                            "Latitude: ",  manual_edit()$LAT, "<br>",
+                            "Longitude: ", manual_edit()$LONG))  %>% 
+      
+      addPolygons(data = basins_shp, 
+                  color = "black", fillColor = "white", 
+                  weight = 1, opacity = 0.7, fillOpacity = 0.2, group = "Basin Delineations") %>% 
+      
       addLayersControl(
         baseGroups = c("OpenStreetMap", "EsriTopo"),
-        options = layersControlOptions(collapsed = FALSE)) 
+        overlayGroups = c("Basin Delineations"),
+        options = layersControlOptions(collapsed = FALSE)) %>% 
+      hideGroup("Basin Delineations") %>% 
+      
+      setMaxBounds(lng1 = -125, lat1 = 25, lng2 = -65, lat2 = 50)
   })
   
+
   
 ##############################
 #### TAB 2 DAILY DATA ####
@@ -198,117 +211,84 @@ server = function(input, output, session) {
     manual_edit()$SITENO # get gauge id from filtered data
   })  
   
-
-  
-  # create a reactive table to manage data retrieval and merge data when button (retrieve_data) is clicked
+# create a reactive table to manage data retrieval and merge data when button (retrieve_data) is clicked
  table = eventReactive(input$retrieve_data, {
    req(filtered_sites()) # make sure filtered_sites is not empty
-   gauge_numbers = filtered_sites()
-   all_gauges_data = list()
+   
+   selected_site_ids = mach_ids[mach_ids %in% filtered_sites()]
+   gauge_numbers = mach_files[mach_ids %in% selected_site_ids]
 
- 
-  # loop through each gauge ID to create the data frame
-  for (gauge_id in gauge_numbers) {
-   gauge_df = create_complete_dates(gauge_id, frequency = "day")
+   all_gauges_data = list() # empty list to store site data
+
+  selected_vars = c() # empty vector for selected variables
+   
+  # check selected variables from user input and add them to selected_vars
+      if (input$select_prcp) selected_vars <- c(selected_vars, "PRCP")
+      if (input$select_tair) selected_vars <- c(selected_vars, "TAIR")
+      if (input$select_tmin) selected_vars <- c(selected_vars, "TMIN")
+      if (input$select_tmax) selected_vars <- c(selected_vars, "TMAX")
+      if (input$select_pet) selected_vars <- c(selected_vars, "PET")
+      if (input$select_aet) selected_vars <- c(selected_vars, "AET")
+      if (input$select_disch) selected_vars <- c(selected_vars, "OBSQ")
+      if (input$select_swe) selected_vars <- c(selected_vars, "SWE")
+      
+  # Loop through each file path (gauge_id) and read the corresponding data
+  for (file_path in gauge_numbers) {
+    # Extract the gauge_id from the file name (this assumes your filenames have the pattern "basin_00000000_MACH.csv")
+    gauge_id = str_extract(basename(file_path), "(?<=basin_)\\d{8}(?=_MACH.csv)")
     
-  # merge data for each variable into single table if selected
-  if (input$select_prcp) {
-    prcp_filepath = paste0("F:/MACH/data/PRCP/basin_", gauge_id, "_prcp.csv")
-    prcp_df = read_and_format(prcp_filepath, c("PRCP"), gauge_id, frequency = "day")
-    if (!is.null(prcp_df)) {
-      gauge_df = dplyr::full_join(gauge_df, prcp_df, by = c("SITENO", "DATE"))
-    }
-  }
-      # read and merge temperature data if checkbox selected
-      if (input$select_tair) {
-        tair_filepath = paste0("F:/MACH/data/TAIR_MEAN/basin_", gauge_id, "_tair.csv")
-        tair_df = read_and_format(tair_filepath, c("TAIR"), gauge_id, frequency = "day")
-        # if the table has values, merge data  
-       if (!is.null(tair_df)) {
-          gauge_df = dplyr::full_join(gauge_df, tair_df, by = c("SITENO", "DATE"))
-        }
-      }
-      
-      # read and merge potential evapotranspiration data if checkbox selected
-      if (input$select_pet) {
-        pet_filepath = paste0("F:/MACH/data/PET/basin_", gauge_id, "_pet.csv")
-        pet_df = read_and_format(pet_filepath, c("PET"), gauge_id, frequency = "day")
-        # if the table has values, merge data  
-        if (!is.null(pet_df)) {
-          gauge_df = dplyr::full_join(gauge_df, pet_df, by = c("SITENO", "DATE"))
-       }
-      }
-      
-      # read and merge actual evapotranspiration data if checkbox selected
-      if (input$select_aet) {
-        aet_filepath = paste0("F:/MACH/data/AET/basin_", gauge_id, "_aet.csv")
-        aet_df = read_and_format(aet_filepath, c("AET"), gauge_id, frequency = "day")
-      # if the table has values, merge data 
-        if (!is.null(aet_df)) {
-          gauge_df = dplyr::full_join(gauge_df, aet_df, by = c("SITENO", "DATE"))
-        }
-      }
-      
-      # read and merge discharge data if checkbox selected
-      if (input$select_disch) {
-        disch_filepath = paste0("F:/MACH/data/OBSQ/basin_", gauge_id, "_obsq.csv")
-        disch_df = read_and_format(disch_filepath, c("OBSQ"), gauge_id, frequency = "day")
-        # if the table has values, merge data
-        if (!is.null(disch_df)) {
-          gauge_df = dplyr::full_join(gauge_df, disch_df, by = c("SITENO", "DATE"))
-        } 
-      }
-      
-      # read and merge swe data if checkbox selected
-      if (input$select_swe) {
-        swe_filepath = paste0("F:/MACH/data/SWE/basin_", gauge_id, "_swe.csv")
-        swe_df = read_and_format(swe_filepath, c("SWE"), gauge_id, frequency = "day")
-      # if the table has values, merge data   
-        if (!is.null(swe_df)) {
-          gauge_df = dplyr::full_join(gauge_df, swe_df, by = c("SITENO", "DATE"))
-        }
-      }
+    # Read and format the data
+    gauge_df = read_and_format(file_path, selected_vars, gauge_id)  # Assuming read_and_format is defined as you have it
     
+    # Store the processed data for each gauge
     all_gauges_data[[gauge_id]] = gauge_df
   }
-  
-  # combine all gauge data frames
-  combined_df = dplyr::bind_rows(all_gauges_data)
-  
-  # apply variable specific filters if selected
-  combined_df = apply_filters(combined_df, gauge_numbers, "PRCP", input$select_prcp, input$prcp1)
-  combined_df = apply_filters(combined_df, gauge_numbers, "TAIR", input$select_tair, input$tair1)
-  combined_df = apply_filters(combined_df, gauge_numbers, "PET", input$select_pet, input$pet1)
-  combined_df = apply_filters(combined_df, gauge_numbers, "AET", input$select_aet, input$aet1)
-  combined_df = apply_filters(combined_df, gauge_numbers, "OBSQ", input$select_disch, input$disch1)
-  combined_df = apply_filters(combined_df, gauge_numbers, "SWE", input$select_swe, input$swe1)
 
-  # apply date filter if selected
+  # Combine all site data into a single dataframe
+  if (length(all_gauges_data) > 0) {
+    combined_df = dplyr::bind_rows(all_gauges_data)
+  } else {
+    return(data.frame(SITENO = character(), DATE = as.Date(character()), stringsAsFactors = FALSE))
+  }
+  
+  # Apply numeric filters for the selected variables
+  combined_df = apply_filters(combined_df, selected_site_ids, "PRCP", input$select_prcp, input$prcp1)
+  combined_df = apply_filters(combined_df, selected_site_ids, "TAIR", input$select_tair, input$tair1)
+  combined_df = apply_filters(combined_df, selected_site_ids, "TMIN", input$select_tmin, input$tmin1)
+  combined_df = apply_filters(combined_df, selected_site_ids, "TMAX", input$select_tmax, input$tmax1)
+  combined_df = apply_filters(combined_df, selected_site_ids, "PET", input$select_pet, input$pet1)
+  combined_df = apply_filters(combined_df, selected_site_ids, "AET", input$select_aet, input$aet1)
+  combined_df = apply_filters(combined_df, selected_site_ids, "OBSQ", input$select_disch, input$disch1)
+  combined_df = apply_filters(combined_df, selected_site_ids, "SWE", input$select_swe, input$swe1)
+
+  # Apply date filter if selected
   if (input$select_date) {
     combined_df = combined_df %>%
       dplyr::filter(DATE >= as.Date(input$date_range1[1]) &
                     DATE <= as.Date(input$date_range1[2]))
   }
   
-  # apply year filter if selected
+  # Apply year filter if selected
   if (input$select_year) {
     combined_df = combined_df %>%
       dplyr::filter(lubridate::year(DATE) %in% input$year1)
   }
   
-  # apply month filter if selected
+  # Apply month filter if selected
   if (input$select_month) {
-    month_abbreviations = months # get month abbreviation that corresponds to number
+    month_abbreviations = months  # You already have month mappings, so use that
     combined_df = combined_df %>%
       dplyr::filter(month_abbreviations[lubridate::month(DATE)] %in% input$month1)
   }
-        combined_df
-    
+
+  return(combined_df)  # Final processed dataset
+ 
   }) # eventReactive close for table
   
   # display the merged data in a data table
   output$merged_data_table = renderDT({
-    table()
+    DT::datatable(table(), options = list(pageLength = 10, scrollX = TRUE, #autoWidth = TRUE,
+      lengthMenu = c(5, 10, 20, 50), dom = "Blfrtip", paging = TRUE), class = "display responsive nowrap")
   })
 
   # download the data displayed in the table as csv file if button is clicked 
@@ -389,56 +369,82 @@ aggregate_monthly_data = function(df, var_name, agg_type) {
     all_gauges_data = list()
     
  # loop through each gauge to retrieve monthly data 
-    for (gauge_id in gauge_numbers) {
-   gauge_df = create_complete_dates(gauge_id, frequency = "monthly") %>% 
-     # create year and month columns in gauge_df dataframe
-   dplyr::mutate(YEAR = lubridate::year(DATE), MONTH = lubridate::month(DATE))
-         
- # retrieve and aggregate data for each variable if selected
+  for (gauge_id in gauge_numbers) {
+    # Check the corresponding file path from mach_files
+    file_path = mach_files[mach_ids == gauge_id]
+    
+    # Create a dataframe for the gauge, ensuring monthly frequency
+    gauge_df = create_complete_dates(gauge_id, frequency = "monthly") %>% 
+      dplyr::mutate(YEAR = lubridate::year(DATE), MONTH = lubridate::month(DATE))
+    
+    # Retrieve and aggregate data for each variable if selected
     if (input$select_prcp_m) {
-      prcp_data = read_and_format(sprintf("F:/MACH/data/PRCP/basin_%s_prcp.csv", gauge_id), "PRCP", gauge_id, frequency = "monthly")
+      prcp_data = read_and_format(file_path, "PRCP", gauge_id, frequency = "monthly")
       if (!is.null(prcp_data)) {
         prcp_agg = aggregate_monthly_data(prcp_data, "PRCP", input$month_agg)
-        gauge_df = dplyr::left_join(gauge_df, prcp_agg, by = c("SITENO", "YEAR", "MONTH"))}
+        gauge_df = dplyr::left_join(gauge_df, prcp_agg, by = c("SITENO", "YEAR", "MONTH"))
+      }
     }
-      
+    
     if (input$select_tair_m) {
-      tair_data = read_and_format(sprintf("F:/MACH/data/TAIR_MEAN/basin_%s_tair.csv", gauge_id), "TAIR", gauge_id, frequency = "monthly")
+      tair_data = read_and_format(file_path, "TAIR", gauge_id, frequency = "monthly")
       if (!is.null(tair_data)) {
         tair_agg = aggregate_monthly_data(tair_data, "TAIR", input$month_agg)
-        gauge_df = dplyr::left_join(gauge_df, tair_agg, by = c("SITENO", "YEAR", "MONTH"))}
+        gauge_df = dplyr::left_join(gauge_df, tair_agg, by = c("SITENO", "YEAR", "MONTH"))
+      }
     }
-   
+    
+     if (input$select_tmin_m) {
+      tmin_data = read_and_format(file_path, "TMIN", gauge_id, frequency = "monthly")
+      if (!is.null(tmin_data)) {
+        tmin_agg = aggregate_monthly_data(tmin_data, "TMIN", input$month_agg)
+        gauge_df = dplyr::left_join(gauge_df, tmin_agg, by = c("SITENO", "YEAR", "MONTH"))
+      }
+     }
+    
+     if (input$select_tmax_m) {
+      tmax_data = read_and_format(file_path, "TMAX", gauge_id, frequency = "monthly")
+      if (!is.null(tmax_data)) {
+        tmax_agg = aggregate_monthly_data(tmax_data, "TMAX", input$month_agg)
+        gauge_df = dplyr::left_join(gauge_df, tmax_agg, by = c("SITENO", "YEAR", "MONTH"))
+      }
+    }
+    
     if (input$select_pet_m) {
-      pet_data = read_and_format(sprintf("F:/MACH/data/PET/basin_%s_pet.csv", gauge_id), "PET", gauge_id, frequency = "monthly")
+      pet_data = read_and_format(file_path, "PET", gauge_id, frequency = "monthly")
       if (!is.null(pet_data)) {
         pet_agg = aggregate_monthly_data(pet_data, "PET", input$month_agg)
-        gauge_df = dplyr::left_join(gauge_df, pet_agg, by = c("SITENO", "YEAR", "MONTH"))}
-    }
- 
-    if (input$select_aet_m) {
-      aet_data = read_and_format(sprintf("F:/MACH/data/AET/basin_%s_aet.csv", gauge_id), "AET", gauge_id, frequency = "monthly")
-      if (!is.null(aet_data)) {
-        aet_agg = aggregate_monthly_data(tair_data, "AET", input$month_agg)
-        gauge_df = dplyr::left_join(gauge_df, aet_agg, by = c("SITENO", "YEAR", "MONTH"))}
+        gauge_df = dplyr::left_join(gauge_df, pet_agg, by = c("SITENO", "YEAR", "MONTH"))
       }
+    }
+
+    if (input$select_aet_m) {
+      aet_data = read_and_format(file_path, "AET", gauge_id, frequency = "monthly")
+      if (!is.null(aet_data)) {
+        aet_agg = aggregate_monthly_data(aet_data, "AET", input$month_agg)
+        gauge_df = dplyr::left_join(gauge_df, aet_agg, by = c("SITENO", "YEAR", "MONTH"))
+      }
+    }
 
     if (input$select_disch_m) {
-      disch_data = read_and_format(sprintf("F:/MACH/data/OBSQ/basin_%s_obsq.csv", gauge_id), "OBSQ", gauge_id, frequency = "monthly")
+      disch_data = read_and_format(file_path, "OBSQ", gauge_id, frequency = "monthly")
       if (!is.null(disch_data)) {
         disch_agg = aggregate_monthly_data(disch_data, "OBSQ", input$month_agg)
-        gauge_df = dplyr::left_join(gauge_df, disch_agg, by = c("SITENO", "YEAR", "MONTH"))}
+        gauge_df = dplyr::left_join(gauge_df, disch_agg, by = c("SITENO", "YEAR", "MONTH"))
       }
-          
+    }
+    
     if (input$select_swe_m) {
-      swe_data = read_and_format(sprintf("F:/MACH/data/SWE/basin_%s_swe.csv", gauge_id), "SWE", gauge_id, frequency = "monthly")
+      swe_data = read_and_format(file_path, "SWE", gauge_id, frequency = "monthly")
       if (!is.null(swe_data)) {
         swe_agg = aggregate_monthly_data(swe_data, "SWE", input$month_agg)
-        gauge_df = dplyr::left_join(gauge_df, swe_agg, by = c("SITENO", "YEAR", "MONTH"))}
+        gauge_df = dplyr::left_join(gauge_df, swe_agg, by = c("SITENO", "YEAR", "MONTH"))
       }
-      
+    }
+
+    # Store aggregated data for each gauge
     all_gauges_data[[gauge_id]] = gauge_df
-  } # close for loop
+  } # Close for loop
   
   # combine all gauge data frames
   combined_df = dplyr::bind_rows(all_gauges_data)
@@ -543,42 +549,56 @@ output$merged_data_table_m = DT::renderDT({
 
       # retrieve and aggregate data for selected variables
       if (input$select_prcp_y) {
-        prcp_data = read_and_format(sprintf("F:/MACH/data/PRCP/basin_%s_prcp.csv", gauge_id), "PRCP", gauge_id, frequency = "yearly")
+      prcp_data = read_and_format(file_path, "PRCP", gauge_id, frequency = "yearly")
         if (!is.null(prcp_data)) {
         prcp_agg = aggregate_annual_data(prcp_data, "PRCP", input$year_agg)
         gauge_df = dplyr::left_join(gauge_df, prcp_agg, by = c("SITENO", "WATERYR"))}
         }
       
       if (input$select_tair_y) {
-        tair_data = read_and_format(sprintf("F:/MACH/data/TAIR_MEAN/basin_%s_tair.csv", gauge_id), "TAIR", gauge_id, frequency = "yearly")
+        tair_data = read_and_format(file_path, "TAIR", gauge_id, frequency = "yearly")
         if (!is.null(tair_data)) {
         tair_agg = aggregate_annual_data(tair_data, "TAIR", input$year_agg)
         gauge_df = dplyr::left_join(gauge_df, tair_agg, by = c("SITENO", "WATERYR"))}
+      }
+      
+      if (input$select_tmin_y) {
+        tmin_data = read_and_format(file_path, "TMIN", gauge_id, frequency = "yearly")
+        if (!is.null(tmin_data)) {
+        tmin_agg = aggregate_annual_data(tmin_data, "TMIN", input$year_agg)
+        gauge_df = dplyr::left_join(gauge_df, tmin_agg, by = c("SITENO", "WATERYR"))}
         }
-    
+      
+      if (input$select_tmax_y) {
+        tmax_data = read_and_format(file_path, "TMAX", gauge_id, frequency = "yearly")
+        if (!is.null(tmax_data)) {
+        tmax_agg = aggregate_annual_data(tmax_data, "TMAX", input$year_agg)
+        gauge_df = dplyr::left_join(gauge_df, tmax_agg, by = c("SITENO", "WATERYR"))}
+      }
+      
        if (input$select_pet_y) {
-        pet_data = read_and_format(sprintf("F:/MACH/data/PET/basin_%s_pet.csv", gauge_id), "PET", gauge_id, frequency = "yearly")
+        pet_data = read_and_format(file_path, "PET", gauge_id, frequency = "yearly")
         if (!is.null(pet_data)) {
         pet_agg = aggregate_annual_data(pet_data, "PET", input$year_agg)
         gauge_df = dplyr::left_join(gauge_df, pet_agg, by = c("SITENO", "WATERYR"))}
         }
 
        if (input$select_aet_y) {
-        aet_data = read_and_format(sprintf("F:/MACH/data/AET/basin_%s_aet.csv", gauge_id), "AET", gauge_id, frequency = "yearly")
+        aet_data = read_and_format(file_path, "AET", gauge_id, frequency = "yearly")
         if (!is.null(aet_data)) {
           aet_agg = aggregate_annual_data(aet_data, "AET", input$year_agg)
           gauge_df = dplyr::left_join(gauge_df, aet_agg, by = c("SITENO", "WATERYR"))}
         }
        
       if (input$select_disch_y) {
-        disch_data = read_and_format(sprintf("F:/MACH/data/OBSQ/basin_%s_obsq.csv", gauge_id), "OBSQ", gauge_id, frequency = "yearly")
+        disch_data = read_and_format(file_path, "OBSQ", gauge_id, frequency = "yearly")
         if (!is.null(disch_data)) {
           disch_agg = aggregate_annual_data(disch_data, "OBSQ", input$year_agg)
           gauge_df = dplyr::left_join(gauge_df, disch_agg, by = c("SITENO", "WATERYR"))}
         }
 
        if (input$select_swe_y) {
-        swe_data = read_and_format(sprintf("F:/MACH/data/SWE/basin_%s_swe.csv", gauge_id), "SWE", gauge_id, frequency = "yearly")
+        swe_data = read_and_format(file_path, "SWE", gauge_id, frequency = "yearly")
         if (!is.null(swe_data)) {
           swe_agg = aggregate_annual_data(swe_data, "SWE", input$year_agg)
           gauge_df = dplyr::left_join(gauge_df, swe_agg, by = c("SITENO", "WATERYR"))}
@@ -649,11 +669,10 @@ output$merged_data_table_m = DT::renderDT({
 ##############################
 #### TAB 5 ATTRIBUTES ####
 ##############################   
-  
-  # create a reactive table to get selected attributes for selected gauges from tab 1    
+   # create a reactive table to get selected attributes for selected gauges from tab 1    
   att_table = eventReactive(input$get_attributes, {
-    
-    req(filtered_sites()) # make sure filtered_sites tables is not empty
+  
+     req(filtered_sites()) # make sure filtered_sites tables is not empty
     # get the filtered sites from tab 1
     gauge_numbers = filtered_sites()
     
@@ -694,7 +713,7 @@ output$merged_data_table_m = DT::renderDT({
       x
     }
   }, attribute_data, init = combined_data_att)
-  
+
   # return the final merged data
   return(combined_data_att)
 }) # close eventReactive  
