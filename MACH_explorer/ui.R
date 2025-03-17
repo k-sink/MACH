@@ -792,19 +792,58 @@ ui = fluidPage(
         h6(strong("HISTORICAL")), 
         p("This tab returns historical daily values (January 1, 1948 to December 31, 1979) for watersheds 
         derived from MOPEX. The sites returned are based on the 'Site Selection' tab. Any filtered sites
-        with site numbers also present in the original MOPEX dataset will be retrieved. No data will be returned
-        if selected sites are not also present in MOPEX."),
+        with site numbers also present in the original MOPEX 395 watersheds will be retrieved. No data will be returned
+        if none of the 'Selected Stream Gauging Sites' appear in MOPEX. Variables are PRCP, OBSQ, TMIN, and TMAX."),
         p(strong("Select Export Option")), 
         tags$ul(
           tags$li("If 'MOPEX only' is selected, daily values for 1948-1979 will be returned."),
-          tags$li("If 'MOPEX + MACH' is selected, daily values for 1980-2023 will be appended to MOPEX data for 1948-1979."), 
-          tags$li("The RETRIEVE and VIEW button must be pressed if the export option is changed.")
-        )
+          tags$li("If 'MOPEX + MACH' is selected, daily values for 1980-2023 from MACH will be appended to MOPEX data for 1948-1979."), 
+          tags$li("The RETRIEVE AND VIEW button must be pressed if the export option is changed.")
+                )
       ) # wellPanel close
     ) # column close
-  ) # fluidRow close
+  ), # fluidRow close
  
+br(), 
+fluidRow(
+  column(width  = 12, 
+         wellPanel(
+           h6(strong("ATTRIBUTES")), 
+           p("This tab returns catchment attributes for 'Site Selection' watersheds."),
+           p(strong("Select Attribute Type")),
+           tags$ul(
+             tags$li("Attributes can be retrieved depending on the type. Single Value per site refers to overall
+                     attributes. Monthly Value per site will return attributes determined on a monthly scale. Annual
+                     Value per site will return attributes determined on an annual scale. Only one type option can be 
+                     selected at a time.")
+           ),
+      p(strong("Select Site Attribute(s)")), 
+        tags$ul(
+          tags$li("Available attributes will change depending on the 'Select Attribute Type' option chosen. Multiple
+                  attribute selections can be made. The RETRIEVE ATTRIBUTES button must be pressed if selections are 
+                  changed."),
+          tags$li("Please refer to the READme file for detailed attribute information including descriptions of the names
+                  displayed in the pull down menu.")
+           )
+         ) # wellPanel close
+         ) # column close
+), #fluidRow close
 
+br(), 
+fluidRow(
+  column(width = 12, 
+         wellPanel(
+           h6(strong("Documentation")),
+           p(strong("Datasets")),
+           p("This app uses data downloaded and processed from the following sources"),
+           tags$ul(
+             tags$li("Daily climate variables (PRCP, TMIN, TMAX, SWE, VP, SRAD, DAYL) from Daymet V4 -  https://daymet.ornl.gov/"),
+             tags$li("Daily streamflow data (OBSQ) from USGS National Water Information System - https://waterdata.usgs.gov/nwis?"), 
+             tags$li("Daily potential and actual evapotranspiration (PET, AET) from GLEAM4 - https://www.gleam.eu/")
+           )
+         ) # wellPanel close
+         ) # column close
+) # fluidRow close
   
 
 ) # tabPanel close
