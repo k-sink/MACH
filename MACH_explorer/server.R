@@ -231,6 +231,9 @@ server = function(input, output, session) {
       if (input$select_aet) selected_vars <- c(selected_vars, "AET")
       if (input$select_disch) selected_vars <- c(selected_vars, "OBSQ")
       if (input$select_swe) selected_vars <- c(selected_vars, "SWE")
+      if (input$select_srad) selected_vars <- c(selected_vars, "SRAD")
+      if (input$select_vp) selected_vars <- c(selected_vars, "VP")
+      if (input$select_dayl) selected_vars <- c(selected_vars, "DAYL")
       
   # Loop through each file path (gauge_id) and read the corresponding data
   for (file_path in gauge_numbers) {
@@ -260,6 +263,9 @@ server = function(input, output, session) {
   combined_df = apply_filters(combined_df, selected_site_ids, "AET", input$select_aet, input$aet1)
   combined_df = apply_filters(combined_df, selected_site_ids, "OBSQ", input$select_disch, input$disch1)
   combined_df = apply_filters(combined_df, selected_site_ids, "SWE", input$select_swe, input$swe1)
+  combined_df = apply_filters(combined_df, selected_site_ids, "SRAD", input$select_srad, input$srad1)
+  combined_df = apply_filters(combined_df, selected_site_ids, "VP", input$select_vp, input$vp1)
+  combined_df = apply_filters(combined_df, selected_site_ids, "DAYL", input$select_dayl, input$dayl1)
 
   # Apply date filter if selected
   if (input$select_date) {
@@ -342,7 +348,7 @@ server = function(input, output, session) {
 # sum will not apply to temperature (will use the mean value)  
 aggregate_monthly_data = function(df, var_name, agg_type) {
 # will use mean value for temperature if total is selected as aggregation type
-   agg_func = if(agg_type == "Total" && var_name == "TAIR") {
+   agg_func = if(agg_type == "Total" && var_name %in% c("TAIR", "TMIN", "TMAX")) {
    function(x) round(mean(x, na.rm = TRUE), 2)
   } else {
    agg_func = switch(
@@ -442,6 +448,30 @@ aggregate_monthly_data = function(df, var_name, agg_type) {
       }
     }
 
+     if (input$select_srad_m) {
+      srad_data = read_and_format(file_path, "SRAD", gauge_id, frequency = "monthly")
+      if (!is.null(srad_data)) {
+        srad_agg = aggregate_monthly_data(srad_data, "SRAD", input$month_agg)
+        gauge_df = dplyr::left_join(gauge_df, srad_agg, by = c("SITENO", "YEAR", "MONTH"))
+      }
+     }
+    
+     if (input$select_vp_m) {
+      vp_data = read_and_format(file_path, "VP", gauge_id, frequency = "monthly")
+      if (!is.null(vp_data)) {
+        vp_agg = aggregate_monthly_data(vp_data, "VP", input$month_agg)
+        gauge_df = dplyr::left_join(gauge_df, vp_agg, by = c("SITENO", "YEAR", "MONTH"))
+      }
+     }
+    
+     if (input$select_dayl_m) {
+      dayl_data = read_and_format(file_path, "DAYL", gauge_id, frequency = "monthly")
+      if (!is.null(dayl_data)) {
+        dayl_agg = aggregate_monthly_data(dayl_data, "DAYL", input$month_agg)
+        gauge_df = dplyr::left_join(gauge_df, dayl_agg, by = c("SITENO", "YEAR", "MONTH"))
+      }
+     }
+    
     # Store aggregated data for each gauge
     all_gauges_data[[gauge_id]] = gauge_df
   } # Close for loop
@@ -517,7 +547,7 @@ output$merged_data_table_m = DT::renderDT({
 # aggregate data annually based on year type and selected variables
 # add condition if total selected for temperature to use mean 
   aggregate_annual_data = function(df, var_name, agg_type) {
-    agg_func = if(agg_type == "Total" && var_name == "TAIR") {
+      agg_func = if(agg_type == "Total" && var_name %in% c("TAIR", "TMIN", "TMAX")) {
       function(x) round(mean(x, na.rm = TRUE), 2)
     } else {
       switch(
@@ -544,7 +574,10 @@ output$merged_data_table_m = DT::renderDT({
     all_gauges_data = list()
 
     for (gauge_id in gauge_numbers) {
-      gauge_df = create_complete_dates(gauge_id, frequency = "yearly") %>%
+   # Check the corresponding file path from mach_files
+    file_path = mach_files[mach_ids == gauge_id]
+  
+        gauge_df = create_complete_dates(gauge_id, frequency = "yearly") %>%
         dplyr::mutate(WATERYR = wYear(DATE))
 
       # retrieve and aggregate data for selected variables
@@ -602,6 +635,27 @@ output$merged_data_table_m = DT::renderDT({
         if (!is.null(swe_data)) {
           swe_agg = aggregate_annual_data(swe_data, "SWE", input$year_agg)
           gauge_df = dplyr::left_join(gauge_df, swe_agg, by = c("SITENO", "WATERYR"))}
+       }
+        
+      if (input$select_srad_y) {
+        srad_data = read_and_format(file_path, "SRAD", gauge_id, frequency = "yearly")
+        if (!is.null(srad_data)) {
+          srad_agg = aggregate_annual_data(srad_data, "SRAD", input$year_agg)
+          gauge_df = dplyr::left_join(gauge_df, srad_agg, by = c("SITENO", "WATERYR"))}
+          }
+        
+      if (input$select_vp_y) {
+        vp_data = read_and_format(file_path, "VP", gauge_id, frequency = "yearly")
+        if (!is.null(vp_data)) {
+          vp_agg = aggregate_annual_data(vp_data, "VP", input$year_agg)
+          gauge_df = dplyr::left_join(gauge_df, vp_agg, by = c("SITENO", "WATERYR"))}
+          }
+        
+      if (input$select_dayl_y) {
+        dayl_data = read_and_format(file_path, "DAYL", gauge_id, frequency = "yearly")
+        if (!is.null(dayl_data)) {
+          dayl_agg = aggregate_annual_data(dayl_data, "DAYL", input$year_agg)
+          gauge_df = dplyr::left_join(gauge_df, dayl_agg, by = c("SITENO", "WATERYR"))}
         }
       
       all_gauges_data[[gauge_id]] = gauge_df
@@ -665,59 +719,176 @@ output$merged_data_table_m = DT::renderDT({
     }
   )
   
+##############################
+#### TAB 5 MOPEX ####
+############################## 
+mopex_table = eventReactive(input$retrieve_mopex, {
+  req(filtered_sites())  # Ensure filtered_sites is available
+  gauge_ids = filtered_sites()  # List of selected gauge IDs
+
+  # Find matching MOPEX file paths for selected gauges
+  matching_files = mopex_files[mopex_ids %in% gauge_ids]  # Match file names with selected IDs
   
+  # If no matching files, return an empty data frame
+  if (length(matching_files) == 0) {
+    return(data.frame())  
+  }
+
+  # Read and combine the selected files
+  mopex_data = purrr::map_df(matching_files, read_csv, col_types = cols())
+  
+  # Check if MACH data should be appended based on user input
+  if (input$mopex_data == "combined") {
+    # Find corresponding MACH files for the selected basins
+    mach_files = list.files(mach_dir, pattern = "basin_\\d{8}_MACH.csv", full.names = TRUE)
+    mach_ids = mach_files %>% basename() %>% str_extract("(?<=basin_)\\d{8}(?=_MACH.csv)")
+
+    # Find MACH files that correspond to the selected basins
+    mach_files = mach_files[mach_ids %in% gauge_ids]
+    
+    # If no MACH files are found, just return MOPEX data
+    if (length(mach_files) == 0) {
+      return(mopex_data)
+    }
+    
+    # Read MACH data
+    mach_data = purrr::map_df(mach_files, read_csv, col_types = cols())
+    
+    # If it's a spec_tbl_df, convert to data.frame
+    if (inherits(mopex_data, "spec_tbl_df")) {
+      mopex_data <- as.data.frame(mopex_data)
+    }
+    
+    # Only keep the relevant columns (OBSQ, PRCP, TMIN, TMAX from MACH)
+    mach_data_relevant = mach_data %>% dplyr::select(SITENO, DATE, OBSQ, PRCP, TMIN, TMAX)
+    
+    # Full join MOPEX and MACH data by SITENO and DATE (with relevant columns from MACH)
+    combined_data = plyr::rbind.fill(mopex_data, mach_data_relevant)
+    
+    return(combined_data)
+  }
+
+  # If "MOPEX only" is selected, return just MOPEX data
+  return(mopex_data)
+})
+
+# Display table in Shiny app
+output$mopex_table = renderDT({
+  mopex_table()  # Display the combined or MOPEX-only data
+})
+
+# Download MOPEX data
+output$download_mopex = downloadHandler(
+  filename = function() {
+    paste0("MOPEX_data_", Sys.Date(), ".csv")
+  },
+  content = function(file) {
+    write.csv(mopex_table(), file, row.names = FALSE)
+  }
+)
+
+# Download MOPEX + MACH data
+output$download_combined = downloadHandler(
+  filename = function() {
+    paste0("MOPEX_MACH_combined_", Sys.Date(), ".csv")
+  },
+  content = function(file) {
+    write.csv(mopex_table(), file, row.names = FALSE)
+  }
+)
+
+# Download separate MOPEX files
+output$download_separate_mopex = downloadHandler(
+  filename = function() {
+    paste0("MOPEX_basin_", Sys.Date(), ".zip")
+  },
+    content = function(file) {
+      temp_dir = "basin_files/"
+      dir.create(temp_dir, showWarnings = FALSE)  # create the directory if it doesn't exist
+      
+      # clear temporary directory by removing any existing files
+      unlink(paste0(temp_dir, "*"), recursive = TRUE)
+      
+      # group data by SITENO and write separate CSV files for each site
+      mopex_table() %>%
+        group_by(SITENO) %>%
+        group_split() %>%
+        walk(.f = function(data) {
+          siteno = unique(data$SITENO)  # extract the unique SITENO
+          file_name = paste0(temp_dir, "mopex_", siteno, ".csv")  # create file path
+          write.csv(data, file = file_name, row.names = FALSE)  # write CSV file
+        })
+    
+        # create a ZIP file containing the CSV files
+      zip::zip(
+        zipfile = file,
+        files = list.files(temp_dir, full.names = TRUE)
+      )
+    }
+  )
+
 ##############################
 #### TAB 5 ATTRIBUTES ####
 ##############################   
-   # create a reactive table to get selected attributes for selected gauges from tab 1    
-  att_table = eventReactive(input$get_attributes, {
+# Reactive function for attribute selection when button pressed
+att_table = eventReactive(input$get_attributes, {
   
-     req(filtered_sites()) # make sure filtered_sites tables is not empty
-    # get the filtered sites from tab 1
-    gauge_numbers = filtered_sites()
-    
-    # initialize empty dataframes for attributes
-   attribute_data = list()
-    
-  # create a function to filter attributes for a dataset (csv file)
-   filter_and_select = function(data, attributes) {
-     if (!is.null(attributes) && length(attributes) > 0) {
-       return(data %>% 
-                dplyr::filter(SITENO %in% gauge_numbers) %>% 
-                dplyr::select(SITENO, all_of(attributes)))
-     } 
-     return(NULL) # if no attributes are selected
-   }
-   
-   # filter attributes for each dataset and add to the list if not NULL
-  if (!is.null(input$site_att)) {
-    attribute_data[["site"]] = filter_and_select(site, input$site_att)
+  req(filtered_sites())  # Ensure filtered_sites table is not empty
+  gauge_numbers = filtered_sites()
+  
+  # Initialize list for storing filtered datasets
+  attribute_data = list()
+  
+  # Function to filter and select attributes
+  filter_and_select = function(data, attributes, include_time_col = NULL) {
+    if (!is.null(attributes) && length(attributes) > 0) {
+      cols_to_select = c("SITENO", if (!is.null(include_time_col)) include_time_col else NULL, attributes)
+      return(data[data$SITENO %in% gauge_numbers, cols_to_select, drop = FALSE])
+    } 
+    return(NULL)
   }
   
-  if (!is.null(input$climate_att)) {
-    attribute_data[["climate"]] = filter_and_select(climate, input$climate_att)
-  }
-  
-  if (!is.null(input$hydro_att)) {
-    attribute_data[["hydrology"]] = filter_and_select(hydrology, input$hydro_att)
-  }
-  
-  # initialize combined_data_att with SITENO column
-  combined_data_att = data.frame(SITENO = gauge_numbers)
-  
-  # perform the full join for all available attribute data
-  combined_data_att = Reduce(function(x, y) {
-    if (!is.null(y)) {
-      dplyr::full_join(x, y, by = "SITENO")
-    } else {
-      x
+  # Select attributes based on user selection type
+  if (input$att_data_type == "single") {
+    if (!is.null(input$site_att)) {
+      attribute_data[["site"]] = filter_and_select(site, input$site_att)
     }
-  }, attribute_data, init = combined_data_att)
+    if (!is.null(input$overall_climate_att)) {
+      attribute_data[["overall_climate"]] = filter_and_select(overall_climate, input$overall_climate_att)
+    }
+    if (!is.null(input$hydro_att)) {
+      attribute_data[["hydrology"]] = filter_and_select(hydrology, input$hydro_att)
+    }
+    if (!is.null(input$soil_att)) {
+      attribute_data[["soil"]] = filter_and_select(soil, input$soil_att)
+    }
+    if (!is.null(input$geology_att)) {
+      attribute_data[["geology"]] = filter_and_select(geology, input$geology_att)
+    }
+    if (!is.null(input$regional_att)) {
+      attribute_data[["regional"]] = filter_and_select(regional, input$regional_att)
+    }
+    if (!is.null(input$anthro_att)) {
+      attribute_data[["anthropogenic"]] = filter_and_select(anthropogenic, input$anthro_att)
+    }
+  } else if (input$att_data_type == "monthly") {
+    if (!is.null(input$monthly_climate_att)) {
+      attribute_data[["monthly_climate"]] = filter_and_select(monthly_climate, input$monthly_climate_att, include_time_col = "MNTH")
+    }
+  } else if (input$att_data_type == "annual") {
+    if (!is.null(input$annual_climate_att)) {
+      attribute_data[["annual_climate"]] = filter_and_select(annual_climate, input$annual_climate_att, include_time_col = "YR")
+    }
+  }
+  
+  # Merge data efficiently with `Reduce()`
+  if (length(attribute_data) > 0) {
+    return(Reduce(function(x, y) dplyr::full_join(x, y, by = "SITENO"), attribute_data))
+  } else {
+    return(data.frame(SITENO = gauge_numbers))
+  }
+})
 
-  # return the final merged data
-  return(combined_data_att)
-}) # close eventReactive  
-   
 
   # get selected attributes as combined data table
   output$catch_attributes = renderDT({
@@ -725,13 +896,19 @@ output$merged_data_table_m = DT::renderDT({
   })  
   
   # download the data displayed in the table as csv file when button is clicked 
-  output$download_att = downloadHandler(
-    filename = function() {
-      paste0("MACH_att_", Sys.Date(), ".csv")
-    },
-    content = function(file) {
-      write.csv(att_table(), file, row.names = FALSE) 
-    }
+  output$download_single_att = downloadHandler(
+    filename = function() {paste0("MACH_att_", Sys.Date(), ".csv")},
+    content = function(file) {write.csv(att_table(), file, row.names = FALSE)}
   )
+  
+  output$download_monthly_att = downloadHandler(
+    filename = function() {paste0("MACH_monthly_att", Sys.Date(), ".csv")}, 
+    content = function(file) {write.csv(att_table(), file, row.names = FALSE)}
+  )
+  
+  output$download_annual_att = downloadHandler(
+  filename = function() { paste0("MACH_annual_att_", Sys.Date(), ".csv") },
+  content = function(file) { write.csv(att_table(), file, row.names = FALSE) }
+)
   
 } # close server
