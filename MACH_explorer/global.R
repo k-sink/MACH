@@ -19,6 +19,7 @@ library(lubridate)
 library(raster)
 library(stats)
 library(here) 
+library(httr)
 
 ################################################
 ### DATA ###
