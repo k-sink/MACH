@@ -15,14 +15,9 @@ library(shinyjs) #shiny java script with R language
 library(shinycssloaders)
 library(shinyalert)
 library(bslib)
-library(sp) # spatial data, create objects of spatial classes 
-library(plotly)
 library(lubridate)
-library(ggpubr)
-library(rstatix)
 library(raster)
 library(stats)
-library(moments)
 library(here) 
 
 ################################################
@@ -32,12 +27,11 @@ library(here)
 site_attributes = read_csv(here("MACH_explorer", "data", "attributes", "site_info.csv"))
 discharge_count = read_csv(here("MACH_explorer", "data", "attributes", "discharge_mach.csv"))
 
-# shapefiles
+# polygon shapefiles
 shapefile_dir = here("MACH_explorer", "data", "shapefile", "MACH_basins.shp")
 basins_shp = st_read(shapefile_dir) %>% st_transform(4326) # convert to lat/lon
 
-# climate variables (organized by folder with individual csv file per site no)
-# format is "basin_00000000_XXXX.csv" where 0 is 8 digit site no and XXXX is variable abbreviation
+# format is "basin_00000000_MACH.csv" where 0 is 8 digit site no 
 # files have first column as "SITENO", second "DATE"
 
 # mach time series files
@@ -54,7 +48,7 @@ mopex_ids = mopex_files %>% basename() %>% str_extract("(?<=basin_)\\d{8}(?=_MOP
 
 # site attributes
 site = site_attributes  
-site_names = colnames(site)[-(1:2)]  
+site_names = colnames(site)[-(1:2)] 
 
 # overall climate attributes
 overall_climate = read_csv(here("MACH_explorer", "data", "attributes", "overall_climate.csv"))
@@ -99,16 +93,31 @@ annual_climate = read_csv(here("MACH_explorer", "data", "attributes", "annual_cl
 annual_climate = annual_climate[,colSums(is.na(annual_climate)|annual_climate == "") !=nrow(annual_climate)]
 annual_clim_names = colnames(annual_climate)[-(1:2)] # remove site number and year from selection options
 
+# land cover attributes
+lc_dir = here("MACH_explorer", "data", "attributes", "land_cover")
+lc_files = list.files(lc_dir, pattern = "^ANLCD\\d{4}\\.csv", full.names = TRUE)
+
 ################################################
 ### VARIABLES ###
 ################################################
 # numeric vector for calendar years to filter daily data
 years = seq(from = 1980, to = 2023, by = 1)
+# numeric vector for water years 
 wateryears = seq(from = 1981, to = 2023, by = 1)
+# month abbreviations 
 months = c("JAN"= 1, "FEB"= 2, "MAR"= 3, "APR"= 4, "MAY"= 5, "JUN"= 6, 
            "JUL"= 7, "AUG"= 8, "SEP"= 9, "OCT"= 10, "NOV"= 11, "DEC"= 12)
 
+# land cover years 
+lc_years = gsub(".*ANLCD(\\d{4})\\.csv", "\\1", lc_files)
+names(lc_files) = lc_years # name vector for easy lookup
 
+# land cover classes 
+lc_class_names = c("Water" = 11, "Perennial Ice/Snow" = 12, "Developed, Open Space" = 21, 
+                   "Developed, Low Intensity" = 22, "Developed, Medium Intensity" = 23, "Developed, High Intensity" = 24, 
+                   "Barren Land" = 31, "Deciduous Forest" = 41, "Evergreen Forest" = 42, "Mixed Forest" = 43, 
+                   "Shrub" = 52, "Grassland/Herbaceous" = 71, "Pasture/Hay" = 81, "Cultivated Crops" = 82, 
+                   "Woody Wetlands" = 90, "Herbaceous Wetlands" = 95)
 ################################################
 ### FUNCTIONS ###
 ################################################
@@ -117,12 +126,13 @@ months = c("JAN"= 1, "FEB"= 2, "MAR"= 3, "APR"= 4, "MAY"= 5, "JUN"= 6,
     ifelse(month(date) < 10, year(date), year(date)+1)}
 
   # function to create a complete date sequence   
-  create_complete_dates = function(gauge_id, frequency = "day") {
+  create_complete_dates = function(gauge_id, frequency = "daily") {
     complete_dates = switch(
       frequency,
-      "day" = seq.Date(from = as.Date("1980-01-01"), to = as.Date("2023-12-31"), by = "day"),
+      "daily" = seq.Date(from = as.Date("1980-01-01"), to = as.Date("2023-12-31"), by = "day"),
       "monthly" = seq.Date(from = as.Date("1980-01-01"), to = as.Date("2023-12-31"), by = "month"),
-      "yearly" = seq.Date(from = as.Date("1980-01-01"), to = as.Date("2023-12-31"), by = "year")
+      "yearly" = seq.Date(from = as.Date("1980-01-01"), to = as.Date("2023-12-31"), by = "year"), 
+      "wyearly" = seq.Date(from = as.Date("1980-10-01"), to = as.Date("2023-09-30"), by = "year")
     )
     data.frame(SITENO = gauge_id, DATE = complete_dates)
   }  
@@ -130,11 +140,14 @@ months = c("JAN"= 1, "FEB"= 2, "MAR"= 3, "APR"= 4, "MAY"= 5, "JUN"= 6,
 
 # function that will read and format data with a complete date sequence, handles missing days
  # create a function that will read and format data with a complete date sequence, handles missing days
-  read_and_format = function(file_path, variable_names, gauge_id, frequency = "day") {
+  read_and_format = function(file_path, variable_names, gauge_id, frequency = "daily") {
     complete_dates = create_complete_dates(gauge_id, frequency)
     
     if (file.exists(file_path)) {
-      df = read_csv(file_path, col_types = list(col_character(), col_date(), col_double()))
+      df = read_csv(file_path, col_types = cols(
+        SITENO = col_character(), 
+        DATE = col_date(), 
+        .default = col_double()))
 
       # make sure each csv file has the required columns
       required_columns = c("SITENO", "DATE", variable_names)
@@ -169,20 +182,6 @@ months = c("JAN"= 1, "FEB"= 2, "MAR"= 3, "APR"= 4, "MAY"= 5, "JUN"= 6,
     }
   }
   
-  
-# variable selection and values   
-# create function to check if variable is selected, read file, format, merge with gauge data
-  #merge_data = function(gauge_df, gauge_id, var_name, file_path_template, input_check) {
-   # if(input_check) {
-    #  filepath = sprintf(file_path_template, gauge_id)
-     # data_df = read_and_format(filepath, var_name, gauge_id)
-      #if(!is.null(data_df)) {
-       # gauge_df = dplyr::full_join(gauge_df, data_df, by = c("SITENO", "DATE"))
-    #  }
-    #}
-    #gauge_df
-  #}
-
 # create function to conditionally apply filters based on the input values in the sliders    
 apply_filters = function(df, gauge_numbers, var_name, input_check, range_input) {
   if(input_check) {

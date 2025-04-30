@@ -62,46 +62,36 @@ ui = fluidPage(
             wellPanel(
             h6(strong("Filter Sites")),
             br(), 
-                    
-   # filter by HUC (2 digit USGS), column huc_02
-      #  selectInput(inputId = "huc1", label = "Regional HUC", 
-           #         choices = sort(unique(site_attributes$huc_cd)),
-          #          multiple = TRUE),
                         
-  # filter by state (contiguous only), column state
-        selectInput(inputId = "state1", label = "State",
+       selectizeInput(inputId = "state1", label = "State",
                     choices = sort(unique(site_attributes$state)),
-                    multiple = TRUE),
+                    multiple = TRUE, 
+                    options = list(placeholder = "Select one or more states")),
                         
-  # filter by latitude
-        checkboxInput(inputId = "latitude", label = "Latitude (N)", value = FALSE), 
+       checkboxInput(inputId = "latitude", label = HTML("Latitude (&deg;N)"), value = FALSE), 
                 conditionalPanel(
                    condition = "input.latitude",
                    sliderInput(inputId = "latitude1", label = NULL,
                    min = 25, max = 50, value = c(25,50), ticks = FALSE)),
-                        
-  # filter by longitude
-       checkboxInput(inputId = "longitude", label = "Longitude (W)", value = FALSE), 
+  
+       checkboxInput(inputId = "longitude", label = HTML("Longitude (&deg;W)"), value = FALSE), 
                conditionalPanel(
                    condition = "input.longitude", 
                    sliderInput(inputId = "longitude1", label = NULL,
                    min = -125, max = -65, value = c(-125,-65), ticks = FALSE)),
                         
-  # filter by mean elevation   
        checkboxInput(inputId = "elevation", label = "Mean Elevation (m)", value = FALSE), 
                conditionalPanel(
                    condition = "input.elevation", 
                    sliderInput(inputId = "elevation1", label = NULL,
                    min = 5, max = 3605, value = c(5, 3605), ticks = FALSE)),
                         
-  # filter by total catchment area     
-      checkboxInput(inputId = "area", label = "Drainage Area (km2)", value = FALSE), 
+      checkboxInput(inputId = "area", label = HTML("Drainage Area (km<sup>2</sup>)"), value = FALSE), 
                 conditionalPanel(
                   condition = "input.area",
                   sliderInput(inputId = "area1", label = NULL,
                   min = 2, max = 26000, value = c(2, 26000),  ticks = FALSE)), 
                         
-  # filter by mean slope
      checkboxInput(inputId = "slope", label = "Mean Slope (percent)", value = FALSE), 
                 conditionalPanel(
                    condition = "input.slope",
@@ -121,29 +111,29 @@ ui = fluidPage(
              br(),
     
      # text input to add a site by its number
-        textInput("add_site_no", "Enter 8-digit Site No:", ""),
+        textInput(inputId = "add_site_no", label = "Manually Add Site", 
+                  placeholder = "Enter 8-digit SITENO"),
                         
      # action button to trigger the addition of the site
-      actionButton("add_site_btn", "Add Site"),
-            br(),
-            br(),
+      actionButton(inputId = "add_site_btn", label = "Add Site"),
+            br(), br(),
         
      # text input to remove a site from the table
-         textInput("remove_site_no", "Enter 8-digit Site No:", ""),
+         textInput(inputId = "remove_site_no", label = "Manually Remove Site", 
+                   placeholder = "Enter 8-digit SITENO"),
                         
      # action button to trigger removal of a site
-      actionButton("remove_site_btn", "Remove Site"), 
+      actionButton(inputId = "remove_site_btn", label = "Remove Site"), 
      br(), br(), 
      
      # action button to remove all sites and clear table to no results
-     actionButton("remove_site_all", "Remove All Sites"),
+     actionButton(inputId = "remove_site_all", label = "Remove All Sites"),
                       )), # wellPanel, column close
                
       ), # fluidRow close
              
              
  # create table number of discharge days per year for selected sites
- # new row            
  fluidRow(
       # create column for first table 
                column(width = 5,
@@ -165,18 +155,14 @@ ui = fluidPage(
              ), #fluidRow close
              
   ), #site selection tabPanel close
-    
 ##############################    
 #### TAB 2 DAILY DATA ####
 ##############################  
-    
 # based on selected sites from spatial tab, choose variables 
 # data tables for hydroclimatic variables (precip, temp, et, pet, runoff)
 # daily values shown 
     tabPanel(title = "Daily Data",
-             
        br(), 
-       # first row 
        fluidRow(
          ## create a column with selection boxes for variable ##    
            column(width = 4, 
@@ -184,80 +170,68 @@ ui = fluidPage(
               style = "overflow: visible; height: auto;",
                h6(strong("Select Variable(s)")),
           
-                        
       # select climate variables      
-        # precipitation     
-         checkboxInput(inputId = "select_prcp", label = "PRCP (mm)"), 
+         checkboxInput(inputId = "select_prcp", label = "Precipitation, PRCP (mm)"), 
                 conditionalPanel(
                    condition = "input.select_prcp",
                    sliderInput(inputId = "prcp1", label = NULL, 
                    min = 0, max = 300, value = c(0,300), ticks = FALSE)),
           
-         # temperature
-         checkboxInput(inputId = "select_tair", label = "TAIR (C)"), 
+         checkboxInput(inputId = "select_tair", label = HTML("Mean Temperature, TAIR (&deg;C)")),  
                  conditionalPanel(
                    condition = "input.select_tair",
                    sliderInput(inputId = "tair1", label = NULL, 
                    min = -50, max = 50, value = c(-50,50), ticks = FALSE)),
-      
-         # minimum temperature
-         checkboxInput(inputId = "select_tmin", label = "TMIN (C)"), 
+
+         checkboxInput(inputId = "select_tmin", label = HTML("Minimum Temperature, TMIN (&deg;C)")), 
                  conditionalPanel(
                    condition = "input.select_tmin",
                    sliderInput(inputId = "tmin1", label = NULL, 
                    min = -50, max = 50, value = c(-50,50), ticks = FALSE)),
-      
-        # maximum temperature
-         checkboxInput(inputId = "select_tmax", label = "TMAX (C)"), 
+
+         checkboxInput(inputId = "select_tmax", label = HTML("Maximum Temperature, TMAX (&deg;C)")), 
                  conditionalPanel(
                    condition = "input.select_tmax",
                    sliderInput(inputId = "tmax1", label = NULL, 
                    min = -50, max = 50, value = c(-50,50), ticks = FALSE)),
-          
-        # potential evapotranspiration 
-         checkboxInput(inputId = "select_pet", label = "PET (mm)"), 
+
+         checkboxInput(inputId = "select_pet", label = "Potential Evapotranspiration, PET (mm)"), 
               conditionalPanel(
                    condition = "input.select_pet",
                    sliderInput(inputId = "pet1", label = NULL, 
                    min = -1, max = 40, value = c(-1,40), ticks = FALSE)),
       
-        # actual evapotranspiration
-         checkboxInput(inputId = "select_aet", label = "AET (mm)"),
+         checkboxInput(inputId = "select_aet", label = "Actual Evapotranspiration, AET (mm)"),
               conditionalPanel(
                    condition = "input.select_aet",
                    sliderInput(inputId = "aet1", label = NULL, 
                    min = -1, max = 40, value = c(-1,40), ticks = FALSE)),
-      
-       # observed discharge      
-         checkboxInput(inputId = "select_disch", label = "OBSQ (mm)"),
+  
+         checkboxInput(inputId = "select_disch", label = "Observed Discharge, OBSQ (mm)"),
              conditionalPanel(
                    condition = "input.select_disch",
                    sliderInput(inputId = "disch1", label = NULL, 
                    min = -1, max = 400, value = c(-1,400), ticks = FALSE)),
-      
-       # snow water equivalent
-         checkboxInput(inputId = "select_swe", label = "SWE (mm)"), 
+
+         checkboxInput(inputId = "select_swe", label = "Snow Water Equivalent, SWE (mm)"), 
                 conditionalPanel(
                    condition = "input.select_swe",
                    sliderInput(inputId = "swe1", label = NULL, 
                    min = 0, max = 1850, value = c(0,1850), ticks = FALSE)),
       
-      # shortwave radiation
-         checkboxInput(inputId = "select_srad", label = "SRAD (W/m2)"), 
+         checkboxInput(inputId = "select_srad", label = HTML("Shortwave Radiation, SRAD (W/m<sup>2</sup>)")), 
                 conditionalPanel(
                    condition = "input.select_srad",
                    sliderInput(inputId = "srad1", label = NULL, 
                    min = 10, max = 900, value = c(10,900), ticks = FALSE)),
       
-        # water vapor pressure
-         checkboxInput(inputId = "select_vp", label = "VP (Pa)"), 
+         checkboxInput(inputId = "select_vp", label = "Water Vapor Pressure, VP (Pa)"), 
                 conditionalPanel(
                    condition = "input.select_vp",
                    sliderInput(inputId = "vp1", label = NULL, 
                    min = 5, max = 4000, value = c(5,4000), ticks = FALSE)),
-      
-      # day length
-         checkboxInput(inputId = "select_dayl", label = "DAYL (sec/day)"), 
+
+         checkboxInput(inputId = "select_dayl", label = "Day Length, DAYL (sec)"), 
                 conditionalPanel(
                    condition = "input.select_dayl",
                    sliderInput(inputId = "dayl1", label = NULL, 
@@ -276,14 +250,16 @@ ui = fluidPage(
        checkboxInput(inputId = "select_year", label = "Calendar Year"), 
             conditionalPanel(
               condition = "input.select_year", 
-      selectInput(inputId = "year1", label = NULL, 
-                  choices = years, multiple = TRUE)),      
+      selectizeInput(inputId = "year1", label = NULL, 
+                  choices = years, multiple = TRUE, 
+                  options = list(placeholder = "Select one or more"))),      
       
       checkboxInput(inputId = "select_month", label = "Month"), 
           conditionalPanel(
             condition = "input.select_month", 
-            selectInput(inputId = "month1", label = NULL, 
-                        choices = months, multiple = TRUE)),
+            selectizeInput(inputId = "month1", label = NULL, 
+                        choices = months, multiple = TRUE, 
+                        options = list(placeholder = "Select one or more"))),
           
       br(),
       
@@ -297,12 +273,10 @@ ui = fluidPage(
             h6(strong("Download Daily Data")), 
             br(), 
            # button to download data table as single csv file
-           shinycssloaders::withSpinner( 
-           downloadButton(outputId = "download_csv", label = "Export as csv")), 
+           downloadButton(outputId = "download_csv", label = "Export as csv"), 
             br(), br(),
            # button to download data table as separate csv files 
-           shinycssloaders::withSpinner(  
-           downloadButton(outputId = "download_separate", label = "Export as separate csv files"))
+           downloadButton(outputId = "download_separate", label = "Export as separate csv files")
               )  # wellPanel close
                ), # column close
                
@@ -318,12 +292,10 @@ ui = fluidPage(
             ) # column close
              ) # fluidRow close
     ), # tabPanel 2 data retrieval close
-    
 
 ##########################    
 #### TAB 3 MONTHLY   ####
 ########################## 
-
 # tab for monthly aggregation 
 # based on selected sites from spatial tab, choose variables 
 # data tables for hydroclimatic variables (precip, temp, et, pet, runoff)
@@ -350,40 +322,18 @@ ui = fluidPage(
               style = "overflow: visible; height: auto;",
               h6(strong("Select Variable(s)")),
           
-                        
       # select climate variables      
-        # precipitation     
-         checkboxInput(inputId = "select_prcp_m", label = "PRCP (mm)"), 
-       
-         # temperature
-         checkboxInput(inputId = "select_tair_m", label = "TAIR (C)"), 
-      
-         # minimum temperature
-         checkboxInput(inputId = "select_tmin_m", label = "TMIN (C)"), 
-      
-        # maximum temperature
-         checkboxInput(inputId = "select_tmax_m", label = "TMAX (C)"), 
-            
-        # potential evapotranspiration 
-         checkboxInput(inputId = "select_pet_m", label = "PET (mm)"), 
-    
-        # actual evapotranspiration
-         checkboxInput(inputId = "select_aet_m", label = "AET (mm)"),
-          
-        # observed discharge      
-         checkboxInput(inputId = "select_disch_m", label = "OBSQ (mm)"),
-         
-         # snow water equivalent
-         checkboxInput(inputId = "select_swe_m", label = "SWE (mm)"), 
-      
-      # shortwave radiation
-         checkboxInput(inputId = "select_srad_m", label = "SRAD (W/m2)"), 
-      
-      # water vapor pressure
-         checkboxInput(inputId = "select_vp_m", label = "VP (Pa)"), 
-      
-      # day length
-         checkboxInput(inputId = "select_dayl_m", label = "DAYL (sec)"), 
+         checkboxInput(inputId = "select_prcp_m", label = "Precipitation, PRCP (mm)"), 
+         checkboxInput(inputId = "select_tair_m", label = HTML("Mean Temperature, TAIR (&deg;C)")), 
+         checkboxInput(inputId = "select_tmin_m", label = HTML("Minimum Temperature, TMIN (&deg;C)")), 
+         checkboxInput(inputId = "select_tmax_m", label = HTML("Maximum Temperature, TMAX (&deg;C)")), 
+         checkboxInput(inputId = "select_pet_m", label = "Potential Evapotranspiration, PET (mm)"), 
+         checkboxInput(inputId = "select_aet_m", label = "Actual Evapotranspiration, AET (mm)"),
+         checkboxInput(inputId = "select_disch_m", label = "Observed Discharge, OBSQ (mm)"),
+         checkboxInput(inputId = "select_swe_m", label = "Snow Water Equivalent, SWE (mm)"), 
+         checkboxInput(inputId = "select_srad_m", label = HTML("Shortwave Radiation, SRAD (W/m<sup>2</sup>)")), 
+         checkboxInput(inputId = "select_vp_m", label = "Water Vapor Pressure, VP (Pa)"), 
+         checkboxInput(inputId = "select_dayl_m", label = "Day Length, DAYL (sec)"), 
          
           br(),
  
@@ -392,14 +342,16 @@ ui = fluidPage(
        checkboxInput(inputId = "select_year_m", label = "Calendar Year"), 
             conditionalPanel(
               condition = "input.select_year_m", 
-      selectInput(inputId = "year2", label = NULL, 
-                  choices = years, multiple = TRUE)),      
+      selectizeInput(inputId = "year2", label = NULL, 
+                  choices = years, multiple = TRUE, 
+                  options = list(placeholder = "Select one or more"))),      
       
       checkboxInput(inputId = "select_month_m", label = "Month"), 
           conditionalPanel(
             condition = "input.select_month_m", 
-            selectInput(inputId = "month2", label = NULL, 
-                        choices = months, multiple = TRUE)),
+            selectizeInput(inputId = "month2", label = NULL, 
+                        choices = months, multiple = TRUE, 
+                        options = list(placeholder = "Select one or more"))),
           
       br(),
       
@@ -425,16 +377,15 @@ ui = fluidPage(
             h6(strong("Filtered Monthly Data")),
             br(), 
             # output data table for selected variables
-            DTOutput(outputId = "merged_data_table_m"))
+            shinycssloaders::withSpinner(
+            DTOutput(outputId = "merged_data_table_m")))
             ) # column close
              ) # fluidRow close
     ), # tabPanel 2 data retrieval close
-    
 
 ##########################    
 #### TAB 4 ANNUAL ####
 ########################## 
-
 # tab for annual aggregation 
 
 # based on selected sites from spatial tab, choose variables 
@@ -448,7 +399,11 @@ ui = fluidPage(
          column(width = 4,
           wellPanel(
              style = "overflow: visible; height: auto;",  
-            
+             
+             h6(strong("Annual Aggregation")), 
+             radioButtons(inputId = "year_type", label = NULL, inline = FALSE, 
+                          choices = c("Water Year" = "water", "Calendar Year" = "calendar"), 
+                          selected = "water"),
             
              h6(strong("Select Statistic")), 
               selectInput(inputId = "year_agg", label = NULL, multiple = FALSE, 
@@ -460,52 +415,44 @@ ui = fluidPage(
                   
             wellPanel(
              h6(strong("Select Variable(s)")),
-          
                         
       # select climate variables      
-        # precipitation     
-         checkboxInput(inputId = "select_prcp_y", label = "PRCP (mm)"), 
-       
-         # temperature
-         checkboxInput(inputId = "select_tair_y", label = "TAIR (C)"), 
-      
-        # minimum temperature
-         checkboxInput(inputId = "select_tmin_y", label = "TMIN (C)"), 
-       
-        # maximum temperature
-         checkboxInput(inputId = "select_tmax_y", label = "TMAX (C)"), 
-            
-        # potential evapotranspiration 
-         checkboxInput(inputId = "select_pet_y", label = "PET (mm)"), 
-    
-        # actual evapotranspiration
-         checkboxInput(inputId = "select_aet_y", label = "AET (mm)"),
-          
-        # observed discharge      
-         checkboxInput(inputId = "select_disch_y", label = "OBSQ (mm)"),
-         
-         # snow water equivalent
-         checkboxInput(inputId = "select_swe_y", label = "SWE (mm)"), 
-      
-       # shortwave radiation
-         checkboxInput(inputId = "select_srad_y", label = "SRAD (W/m2)"), 
-      
-       # water vapor pressure
-         checkboxInput(inputId = "select_vp_y", label = "VP (Pa)"), 
-      
-       # day length
-         checkboxInput(inputId = "select_dayl_y", label = "DAYL (sec)"), 
+         checkboxInput(inputId = "select_prcp_y", label = "Precipitation, PRCP (mm)"), 
+         checkboxInput(inputId = "select_tair_y", label = HTML("Mean Temperature, TAIR (&deg;C)")), 
+         checkboxInput(inputId = "select_tmin_y", label = HTML("Minimum Temperature, TMIN (&deg;C)")), 
+         checkboxInput(inputId = "select_tmax_y", label = HTML("Maximum Temperature, TMAX (&deg;C)")), 
+         checkboxInput(inputId = "select_pet_y", label = "Potential Evapotranspiration, PET (mm)"), 
+         checkboxInput(inputId = "select_aet_y", label = "Actual Evapotranspiration, AET (mm)"),
+         checkboxInput(inputId = "select_disch_y", label = "Observed Discharge, OBSQ (mm)"),
+         checkboxInput(inputId = "select_swe_y", label = "Snow Water Equivalent, SWE (mm)"), 
+         checkboxInput(inputId = "select_srad_y", label = HTML("Shortwave Radiation, SRAD (W/m<sup>2</sup>)")), 
+         checkboxInput(inputId = "select_vp_y", label = "Water Vapor Pressure, VP (Pa)"), 
+         checkboxInput(inputId = "select_dayl_y", label = "Day Length, DAYL (sec)"), 
          
           br(),
  
   # temporal filter for annual data    
       h6(strong("Select Time Period(s)")), 
   style = "overflow: visible; height: auto;",
-      checkboxInput(inputId = "select_year_wy", label = "Water Year"), 
+  
+  conditionalPanel(
+    condition = "input.year_type == 'water'",
+   checkboxInput(inputId = "select_year_wy", label = "Water Year"), 
             conditionalPanel(
               condition = "input.select_year_wy", 
-      selectInput(inputId = "wateryear1", label = NULL, 
-                  choices = wateryears, multiple = TRUE)),      
+      selectizeInput(inputId = "wateryear1", label = NULL, 
+                  choices = wateryears, multiple = TRUE, 
+                  options = list(placeholder = "Select one or more")))),  
+  
+  conditionalPanel(
+    condition = "input.year_type == 'calendar'", 
+    checkboxInput(inputId = "select_year_cal", label = "Calendar Year"), 
+    conditionalPanel(
+    condition = "input.select_year_cal", 
+    selectizeInput(inputId = "calyear1", label = NULL, 
+                choices = years, multiple = TRUE, 
+                options = list(placeholder = "Select one or more")))),
+  
       br(),
       
   # button to get selected data and combine into single data table
@@ -532,17 +479,17 @@ ui = fluidPage(
             br(), 
             
             # output data table for selected variables
-            DTOutput(outputId = "merged_data_table_y"))
+            shinycssloaders::withSpinner(
+            DTOutput(outputId = "merged_data_table_y")))
             ) # column close
              ) # fluidRow close
     ), # tabPanel 2 data retrieval close
 
-
 ##########################    
 #### TAB 5 MOPEX ####
 ########################## 
-# tab for historical mopex data and appending data to mach
- tabPanel(title = "Historical", 
+# tab for mopex data and appending data to mach
+ tabPanel(title = "MOPEX", 
           br(), 
           fluidRow(
             column(width = 4,
@@ -552,7 +499,7 @@ ui = fluidPage(
                      br(), 
                      selectInput(inputId = "mopex_data", label = NULL, multiple = FALSE, 
                                  choices = c("MOPEX only" = "mopex", 
-                                 "MOPEX + MACH" = "combined")),
+                                 "MOPEX & MACH" = "combined")),
                     br(), 
                     actionButton(inputId = "retrieve_mopex", label = "Retrieve and View Data"), 
                     ), # wellPanel close
@@ -572,7 +519,8 @@ ui = fluidPage(
                        style = "overflow: visible; height: auto;",
                       h6(strong("MOPEX Basins Data")), 
                 br(), 
-                      DTOutput(outputId = "mopex_table")
+                shinycssloaders::withSpinner(      
+                DTOutput(outputId = "mopex_table"))
                      ) # wellPanel close
                    )) # column, fluidRow close
           ), #tabPanel close
@@ -580,9 +528,7 @@ ui = fluidPage(
 ##########################    
 #### TAB 6 ATTRIBUTES ####
 ########################## 
-    
 # get selected characteristics for selected sites 
-    
     tabPanel(title = "Attributes", 
              
        br(), 
@@ -604,32 +550,39 @@ ui = fluidPage(
       h6(strong("Select Overall Site Attribute(s)")), 
     
     # select column(s) from site attributes csv file
-        selectInput(inputId = "site_att", label = "Catchment", 
-                    choices = site_names, multiple = TRUE), 
+        selectizeInput(inputId = "site_att", label = "Catchment", 
+                    choices = site_names, multiple = TRUE, 
+                    options = list(placeholder = "Select one or more")), 
                 
     # select column(s) from climate attributes csv file
-        selectInput(inputId = "overall_climate_att", label = "Overall Climate", 
-                    choices = overall_clim_names, multiple = TRUE), 
+        selectizeInput(inputId = "overall_climate_att", label = "Climate", 
+                    choices = overall_clim_names, multiple = TRUE, 
+                    options = list(placeholder = "Select one or more")), 
                         
     # select column(s) from hydrology attributes csv file
-        selectInput(inputId = "hydro_att", label = "Hydrology", 
-                    choices = hydro_names, multiple = TRUE), 
+        selectizeInput(inputId = "hydro_att", label = "Hydrology", 
+                    choices = hydro_names, multiple = TRUE, 
+                    options = list(placeholder = "Select one or more")), 
     
     # select column(s) from soil attributes csv file
-        selectInput(inputId = "soil_att", label = "Soil", 
-                    choices = soil_names, multiple = TRUE), 
+        selectizeInput(inputId = "soil_att", label = "Soil", 
+                    choices = soil_names, multiple = TRUE, 
+                    options = list(placeholder = "Select one or more")), 
     
      # select column(s) from geology attributes csv file
-        selectInput(inputId = "geology_att", label = "Geology", 
-                    choices = geology_names, multiple = TRUE), 
+        selectizeInput(inputId = "geology_att", label = "Geology", 
+                    choices = geology_names, multiple = TRUE, 
+                    options = list(placeholder = "Select one or more")), 
     
      # select column(s) from regional attributes csv file
-        selectInput(inputId = "regional_att", label = "Regional", 
-                    choices = regional_names, multiple = TRUE), 
+        selectizeInput(inputId = "regional_att", label = "Regional", 
+                    choices = regional_names, multiple = TRUE, 
+                    options = list(placeholder = "Select one or more")), 
     
      # select column(s) from anthropogenic attributes csv file
-        selectInput(inputId = "anthro_att", label = "Anthropogenic", 
-                    choices = anthropogenic_names, multiple = TRUE), 
+        selectizeInput(inputId = "anthro_att", label = "Anthropogenic", 
+                    choices = anthropogenic_names, multiple = TRUE, 
+                    options = list(placeholder = "Select one or more")), 
     
     ), # conditionalPanel close
     
@@ -637,21 +590,23 @@ ui = fluidPage(
       condition = "input.att_data_type == 'monthly'", 
       h6(strong("Select Monthly Site Attribute(s)")),
       
-      selectInput(inputId = "monthly_climate_att", label = "Monthly Climate", 
-                  choices = monthly_clim_names, multiple = TRUE)
+      selectizeInput(inputId = "monthly_climate_att", label = "Monthly Climate", 
+                  choices = monthly_clim_names, multiple = TRUE, 
+                  options = list(placeholder = "Select one or more"))
     ), # conditionalPanel close
     
       conditionalPanel(
       condition = "input.att_data_type == 'annual'", 
       h6(strong("Select Annual Site Attribute(s)")),
       
-      selectInput(inputId = "annual_climate_att", label = "Annual Climate", 
-                  choices = annual_clim_names, multiple = TRUE)
+      selectizeInput(inputId = "annual_climate_att", label = "Annual Climate", 
+                  choices = annual_clim_names, multiple = TRUE, 
+                  options = list(placeholder = "Select one or more"))
     ), # conditionalPanel close
     
       br(), 
       actionButton(inputId = "get_attributes", label = "Retrieve Attributes"),
-   
+  
                 ), # wellPanel close
     br(), 
     wellPanel(
@@ -672,7 +627,7 @@ ui = fluidPage(
       condition = "input.att_data_type == 'annual'", 
       downloadButton(outputId = "download_annual_att", label = "Export Annual Data")
     ) # conditionalPanel close
-    ) # wellPanel close
+    ), # wellPanel close
              ), # column close
     
 # new column to display data table for selected attributes
@@ -680,14 +635,56 @@ ui = fluidPage(
                       wellPanel(
                         h6(strong("Selected Attributes")), 
                         br(),
-                        DTOutput(outputId = "catch_attributes")
+                        shinycssloaders::withSpinner(
+                        DTOutput(outputId = "catch_attributes"))
                       )) # wellPanel, column close
              ) # fluidRow close
              
     ), # tab panel 5 attributes close
 
 ##############################
-#### HOME TAB  ####
+#### LAND COVER TAB  ####
+############################## 
+ tabPanel(title = "Land Cover", 
+       br(), 
+         fluidRow(
+             column(5, 
+                wellPanel(
+                 style = "overflow: visible; height: auto;",
+                   style = "width: 100%;", 
+                  h6(strong("Select Calendar Year(s)")),
+                selectizeInput(inputId = "lc_year", label = NULL, multiple = TRUE, 
+                            choices = lc_years, options = list(placeholder = "Select one or more")), 
+                br(), 
+          h6(strong("Select Land Cover Class(es)")), 
+          style = "overflow: visible; height: auto;",
+          selectizeInput(inputId = "lc_class", label = NULL, multiple = TRUE, 
+                      choices = lc_class_names, options = list(placeholder = "Select one or more")),
+          br(), 
+          actionButton(inputId = "get_landcover", label = "Retrieve Attributes"), 
+                ), # wellPanel close
+          
+          br(), 
+          wellPanel(
+            h6(strong("Download Attributes")),
+            br(),
+            downloadButton(outputId = "download_lc_att", label = "Export LC Data")
+          ) # wellPanel close
+                 ), # column close
+          
+          column(7, 
+                 wellPanel(
+                   h6(strong("Selected Land Cover Data")),
+                   br(), 
+                   shinycssloaders::withSpinner(
+                   DTOutput(outputId = "lc_attributes"))
+                 )) # wellPanel, column close
+        ) #fluidRow close
+        
+         ), # tabPanel close
+
+##############################
+#### ABOUT TAB  ####
 ##############################  
 # user information 
  tabPanel(title = "About", 
@@ -753,9 +750,10 @@ ui = fluidPage(
         p(strong("Select Variable(s)")), 
         tags$ul(
           tags$li("Select one or more variables for the filtered sites chosen in the 'Site Selection' tab."), 
-          tags$li("Variable abbreviations and units are: Precipitation (PRCP) mm/day, mean air temperature (TAIR), minimum air temperature (TMIN),      
-          and maximum air temperature (TMAX) in degrees Celcius, potential evapotranspiration (PET) mm/day, actual evapotranspiration (AET) mm/day, 
-          stream discharge (OBSQ) mm/day, snow water equivalent (SWE) mm/day, shortwave radiation (W/m2), water vapor pressure (Pa), and day length (seconds)."),
+          tags$li("Variable abbreviations and units are: Precipitation (PRCP) in millimeters per day, mean air temperature (TAIR), minimum air temperature (TMIN),      
+          and maximum air temperature (TMAX) in degrees Celcius, potential evapotranspiration (PET) in millimeters per day, actual evapotranspiration (AET) in 
+          millimeters per day, stream discharge (OBSQ) in millimeters per day, snow water equivalent (SWE) in  millimeters per day, shortwave radiation (SRAD) in 
+          watts per square meter, water vapor pressure (VP) Pascals, and day length (DAYL) in seconds per day."),
           tags$li("DAILY DATA tab only - selected variables can be filtered by range using the slider bars. Defaults to all available data for selected variable.")
         ), 
         p(strong("Select Statistic")), 
@@ -789,15 +787,15 @@ ui = fluidPage(
   fluidRow(
     column(width = 12, 
       wellPanel(
-        h6(strong("HISTORICAL")), 
-        p("This tab returns historical daily values (January 1, 1948 to December 31, 1979) for watersheds 
+        h6(strong("MOPEX")), 
+        p("This tab returns daily values (January 1, 1948 to December 31, 1979) for watersheds 
         derived from MOPEX. The sites returned are based on the 'Site Selection' tab. Any filtered sites
         with site numbers also present in the original MOPEX 395 watersheds will be retrieved. No data will be returned
         if none of the 'Selected Stream Gauging Sites' appear in MOPEX. Variables are PRCP, OBSQ, TMIN, and TMAX."),
         p(strong("Select Export Option")), 
         tags$ul(
           tags$li("If 'MOPEX only' is selected, daily values for 1948-1979 will be returned."),
-          tags$li("If 'MOPEX + MACH' is selected, daily values for 1980-2023 from MACH will be appended to MOPEX data for 1948-1979."), 
+          tags$li("If 'MOPEX & MACH' is selected, daily values for 1980-2023 from MACH will be appended to MOPEX data for 1948-1979."), 
           tags$li("The RETRIEVE AND VIEW button must be pressed if the export option is changed.")
                 )
       ) # wellPanel close
@@ -839,7 +837,10 @@ fluidRow(
            tags$ul(
              tags$li("Daily climate variables (PRCP, TMIN, TMAX, SWE, VP, SRAD, DAYL) from Daymet V4 -  https://daymet.ornl.gov/"),
              tags$li("Daily streamflow data (OBSQ) from USGS National Water Information System - https://waterdata.usgs.gov/nwis?"), 
-             tags$li("Daily potential and actual evapotranspiration (PET, AET) from GLEAM4 - https://www.gleam.eu/")
+             tags$li("Daily potential and actual evapotranspiration (PET, AET) from GLEAM4 - https://www.gleam.eu/"), 
+             tags$li("Various catchment attributes from USGS NHDPlus Version 2.1 - https://doi.org/10.5066/F7765D7V"), 
+             tags$li("Land cover catchment attributes from Multi-Resolution Land Characteristics (MRLC) - https://www.mrlc.gov/"), 
+             tags$li("Dam attributes from the US Army Corps of Engineers (USACE) National Inventory of Dams - https://nid.sec.usace.army.mil/#/")
            )
          ) # wellPanel close
          ) # column close
