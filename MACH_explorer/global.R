@@ -1,3 +1,5 @@
+# Katharine Sink 
+# MACH global libraries and functions 
 # packages and data for app
 # automatically reads if in app folder
 

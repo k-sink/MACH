@@ -1,7 +1,7 @@
 # Katharine Sink
 # MACH (Mopex and Camels Hydro Explorer)
 
-# user interface
+### USER INTERFACE ###
 ui = fluidPage(
   
     # Add custom CSS for resizing
