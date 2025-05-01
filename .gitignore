@@ -2,4 +2,5 @@
 .Rhistory
 .RData
 .Ruserdata
-MACH_explorer/data/
+MACH_explorer/data/timeseries/
+MACH_explorer/data/GeoJSON/
