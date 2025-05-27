@@ -1,7 +1,6 @@
 # Katharine Sink
 # September 2024
 
-
 ### SERVER ###
 
 server = function(input, output, session) {
@@ -217,7 +216,7 @@ server = function(input, output, session) {
       
   # loop through each file path (gauge_id) and read the corresponding data
   for (file_path in gauge_numbers) {
-    # extract the gauge_id from the file name (this assumes your filenames have the pattern "basin_00000000_MACH.csv")
+    # extract the gauge_id from the file name 
     gauge_id = str_extract(basename(file_path), "(?<=basin_)\\d{8}(?=_MACH.csv)")
     # read and format the data
     gauge_df = read_and_format(file_path, selected_vars, gauge_id)  

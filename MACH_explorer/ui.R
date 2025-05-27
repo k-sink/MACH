@@ -28,7 +28,7 @@ ui = fluidPage(
   theme = bslib::bs_theme(bootswatch = "lumen"), 
   
   # implement shiny js features
-  useShinyjs(), 
+  shinyjs::useShinyjs(), 
   
   titlePanel("MACH Explorer"), 
   
@@ -820,7 +820,7 @@ fluidRow(
           tags$li("Available attributes will change depending on the 'Select Attribute Type' option chosen. Multiple
                   attribute selections can be made. The RETRIEVE ATTRIBUTES button must be pressed if selections are 
                   changed."),
-          tags$li("Please refer to the READme file for detailed attribute information including descriptions of the names
+          tags$li("Please refer to the READme.csv file for detailed attribute information including descriptions of the names
                   displayed in the pull down menu.")
            )
          ) # wellPanel close
@@ -837,6 +837,7 @@ fluidRow(
            tags$ul(
              tags$li("Daily climate variables (PRCP, TMIN, TMAX, SWE, VP, SRAD, DAYL) from Daymet V4 -  https://daymet.ornl.gov/"),
              tags$li("Daily streamflow data (OBSQ) from USGS National Water Information System - https://waterdata.usgs.gov/nwis?"), 
+             tags$li("Daily climate variables for MOPEX (PRCP, TMIN, TMAX) from MOPEX - ftp://hydrology.nws.noaa.gov/pub/gcip/mopex/US_Data/"),
              tags$li("Daily potential and actual evapotranspiration (PET, AET) from GLEAM4 - https://www.gleam.eu/"), 
              tags$li("Various catchment attributes from USGS NHDPlus Version 2.1 - https://doi.org/10.5066/F7765D7V"), 
              tags$li("Land cover catchment attributes from Multi-Resolution Land Characteristics (MRLC) - https://www.mrlc.gov/"), 
