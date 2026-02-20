@@ -15,7 +15,7 @@ library(here)
 ## USGS DISCHARGE DATA RETRIEVAL ##
 ########################################################################
 
-# obtain hydrologic data from USGS NWIS
+# obtain hydrologic data from USGS NWIS using gage number 
 # https://cran.r-project.org/web/packages/dataRetrieval/vignettes/dataRetrieval.html
 
 # get list of gauges as csv file (single column)
@@ -151,8 +151,102 @@ for (streamflow_file in streamflow_files) {
 
 ########################################################################
 # reformat discharge data files 
+discharge_mm_path = here("data", "discharge_mm")
 
+# create output directory for runoff depth files
+obsq_files = here("data", "MACH/OBSQ")
 
+  if(!dir.exists(obsq_files)) {
+    dir.create(obsq_files, recursive = TRUE) 
+  }
+
+streamflow_files = list.files(path = discharge_mm_path, pattern = "\\.csv$", full.names = TRUE)
+
+# loop through each streamflow file
+for (streamflow_file in streamflow_files) {
+  
+  # Read the streamflow data
+  streamflow_data = read_csv(streamflow_file, col_types = cols(
+    agency_cd = col_character(), 
+    site_no = col_character(),  # ensure site_no is read as a character
+    dateTime = col_datetime(), 
+    X_00060_00003 = col_double(),
+    X_00060_00003_cd = col_character(),
+    tz_cd = col_character(), 
+    Area_sqkm = col_double(), 
+    Area_sqmm = col_character(), 
+    OBSQ = col_character()))
+  
+  streamflow_data = streamflow_data %>% dplyr::select(site_no, dateTime, OBSQ) %>% 
+    rename(SITENO = site_no, DATE = dateTime) %>% mutate(OBSQ = parse_number(OBSQ))
+
+  # extract the GaugeID (SITENO) from the streamflow data
+  gauge_id = unique(streamflow_data$SITENO)
+   
+  # define new file name
+  new_file_name = paste0("basin_", gauge_id, "_obsq.csv")
+  new_file_path = file.path(obsq_files, new_file_name)
+  
+  # write the modified data to a new CSV file
+   write.csv(streamflow_data, new_file_path, row.names = FALSE)
+  
+  # print message indicating completion for the current streamflow file
+  cat("Processed streamflow file:", streamflow_file, "\n")
+}
+  
+########################################################################
+# discharge files are not complete for all years and/or basins
+# create a complete time series with NA values for missing dates
+
+# function to create the full date sequence for each file
+create_complete_dates = function() {
+  # Create a complete sequence of dates from 01/01/1980 to 12/31/2023 (16071 days)
+  seq.Date(from = as.Date("1980-01-01"), to = as.Date("2023-12-31"), by = "day")
+}
+
+# function to process each CSV file
+process_csv_file = function(file_path) {
+  # create the full date sequence
+  complete_dates = create_complete_dates()
+  
+  # Read the CSV file
+  df = read_csv(file_path, col_types = list(col_character(), col_date(), col_double()))
+  
+  # ensure the 'DATE' column is in Date format
+  df$DATE= as.Date(df$DATE, format = "%m/%d/%Y")
+  
+  # merge the CSV file data with the complete date sequence
+  # use full_join to preserve all the dates, even those missing in the CSV file
+  df_complete = full_join(data.frame(DATE = complete_dates), df, by = "DATE")
+  
+  # fill missing OBSQ values with NaN
+  df_complete$OBSQ[is.na(df_complete$OBSQ)] = NaN
+  
+  # make sure the SITENO column is correctly populated (use the SITENO from the first row)
+  # all rows will have the same SITENO, so just fill it in with the correct value
+  df_complete$SITENO = str_extract(file_path, "(?<=basin_)(\\d+)(?=_obsq.csv)")
+  
+ # order the columns 
+  df_complete = df_complete %>% dplyr::select(SITENO, DATE, OBSQ)
+  
+   # return the processed data frame in desired order
+  return(df_complete)
+}
+
+# directory where the CSV files are stored
+input_dir = here("data", "MACH", "OBSQ")
+
+# get the list of all CSV files in the directory
+csv_files = list.files(input_dir, pattern = "basin_\\d{8}_obsq.csv", full.names = TRUE)
+
+# loop through each file, process it, and save the updated file
+for (file_path in csv_files) {
+  # process the CSV file
+  df_processed = process_csv_file(file_path)
+  
+  # write the updated data frame back to a CSV file (overwriting the original)
+  write.csv(df_processed, file_path, row.names = FALSE)
+}
 
 
 ########################################################################
