@@ -33,3 +33,4 @@ Constructive feedback, feature requests, and reproducibility reports are welcome
 ## About this repository
 
 ## Contact information
+Please contact Katharine Sink at katharine.sink@utdallas.edu with any questions or feedback regarding MACH. 
