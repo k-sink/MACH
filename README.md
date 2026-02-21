@@ -41,7 +41,6 @@ MACH includes:
 - Long-term watershed change assessment
 - Large-sample hydrology research
 
-
 ## Basin framework
 <p>MACH adopts basins identifiers consistent with the MOPEX and CAMELS frameworks to facilitate cross-dataset comparison and interoperability.</p>
 <p>However, all meteorological forcings, streamflow records, watershed attributes, and derived indices have been <strong>newly processed, harmonized, and validated</strong> for this release. All variables are aggregated and standardized at the basin scale to ensure spatial consistency across catchments.</p>
@@ -54,16 +53,14 @@ MACH integrates information derived from:
 
 ## Data Access
 :point_right: The MACH dataset is publicly archived on [Zenodo](https://zenodo.org/records/18686475). 
-Each release is versioned and permanently archived. 
+Each release is versioned and permanently archived. Future updates will include extended time series. 
 Please use the DOI corresponding to the version used in your analysis. 
 
 Version 4.0 release date 2/19/2026
-Future updates will include extended time series. 
 
 ## Feedback and issue reporting
 If you encounter inconsistencies or have suggestions for improvement, please open an issue in this repository:
-https://github.com/k-sink/MACH/issues
-Constructive feedback, feature requests, and reproducibility reports are welcome. 
+https://github.com/k-sink/MACH/issues. Constructive feedback, feature requests, and reproducibility reports are welcome. 
 
 ## About this repository
 This repository contains:
@@ -71,6 +68,7 @@ This repository contains:
 - Data processing workflows and scripts
 - Release notes and version history
 - Issue tracking and community feedback
+  
 The full dataset is archived on Zenodo. 
 
 ## Contact information
