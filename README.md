@@ -58,6 +58,8 @@ Please use the DOI corresponding to the version used in your analysis.
 
 Version 4.0 release date 2/19/2026
 
+For a detailed description of dataset methodology, please refer to the Data Descriptor manuscript, **MACH: A Multi-Attribute Catchment Hydrometeorological dataset**, available at https://www.nature.com/articles/s41597-026-07162-x
+
 ## Feedback and issue reporting
 If you encounter inconsistencies or have suggestions for improvement, please open an issue in this repository:
 https://github.com/k-sink/MACH/issues. Constructive feedback, feature requests, and reproducibility reports are welcome. 
